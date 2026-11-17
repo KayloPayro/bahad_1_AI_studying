@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#2f5a4c" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0f151a" media="(prefers-color-scheme: dark)" />
+    <meta name="description" content="לומדות AI לצוערים" />
+    <title>אותה משימה, שתי הנחיות</title>
+    <link rel="manifest" href="%SITE_BASE%manifest.webmanifest" />
+    <link rel="icon" href="%SITE_BASE%icons/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="%SITE_BASE%icons/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem('lumda.theme');
+          if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="app"></div>
+    <noscript>הלומדה צריכה JavaScript. פתח אותה בדפדפן רגיל.</noscript>
+    <script type="module" src="./src/main.tsx"></script>
+  </body>
+</html>
