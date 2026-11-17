@@ -1,0 +1,13 @@
+# Playwright CLI output (may contain credentials)
+.playwright-cli/
+
+# Node / dependencies
+node_modules/
+
+# Local Claude Code settings
+.claude/settings.local.json
+
+# Playwright artifacts
+.playwright/
+test-results/
+playwright-report/
