@@ -1,0 +1,51 @@
+{
+  "name": "bahad1-ai-lumdot",
+  "private": true,
+  "version": "0.1.0",
+  "description": "לומדות AI לצוערים: מונוריפו של מנוע משותף ולומדה נפרדת לכל נושא",
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "modules/*",
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "npm run dev -w @lumda/site",
+    "dev:l01": "npm run dev -w @lumda/l01",
+    "dev:l02": "npm run dev -w @lumda/l02",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "validate": "tsx scripts/validate-content.ts",
+    "build:all": "tsx scripts/build-all.ts",
+    "preview": "vite preview --config scripts/preview.config.ts",
+    "e2e": "playwright test",
+    "icons": "tsx scripts/make-icons.ts",
+    "check": "npm run typecheck && npm run lint && npm test && npm run validate"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.28.0",
+    "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.65.1",
+    "@preact/preset-vite": "^2.10.6",
+    "@types/node": "^22.15.0",
+    "ajv": "^8.20.0",
+    "eslint": "^10.15.0",
+    "globals": "^16.0.0",
+    "jsdom": "^31.0.1",
+    "preact": "^10.29.8",
+    "prettier": "^3.10.1",
+    "tsx": "^4.23.15",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.73.0",
+    "vite": "^8.3.8",
+    "vitest": "^4.1.12",
+    "workbox-build": "^7.4.1"
+  }
+}

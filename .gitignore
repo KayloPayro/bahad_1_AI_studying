@@ -11,3 +11,19 @@ node_modules/
 .playwright/
 test-results/
 playwright-report/
+blob-report/
+
+# Build output
+dist/
+coverage/
+*.tsbuildinfo
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+
+# Env
+.env
+.env.*
