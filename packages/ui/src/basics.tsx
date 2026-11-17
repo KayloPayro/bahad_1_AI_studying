@@ -1,0 +1,74 @@
+import { createContext, type ComponentChildren } from 'preact';
+import { useContext } from 'preact/hooks';
+import { config } from '@lumda/config';
+import { Rich } from './rich';
+
+export const InstructorContext = createContext(false);
+export const useInstructor = () => useContext(InstructorContext);
+
+/** Fixed credit line on every screen. Never blocks taps, clears the iPhone home indicator. */
+export function Watermark() {
+  return (
+    <div class="watermark" dir="ltr" lang="en" aria-hidden="true">
+      {config.WATERMARK}
+    </div>
+  );
+}
+
+/** "Why this is right" — collapsed by default, opens on tap. */
+export function Why({ text }: { text?: string }) {
+  if (!text) return null;
+  return (
+    <details class="why">
+      <summary>למה זה נכון</summary>
+      <p>
+        <Rich text={text} />
+      </p>
+    </details>
+  );
+}
+
+export function InstructorNote({ text, children }: { text?: string; children?: ComponentChildren }) {
+  const on = useInstructor();
+  if (!on || (!text && !children)) return null;
+  return (
+    <aside class="inst-note" aria-label="הערת מדריך">
+      <span class="inst-label">מדריך</span>
+      {text && <Rich text={text} />}
+      {children}
+    </aside>
+  );
+}
+
+export function Chip({ children, tone }: { children: ComponentChildren; tone?: 'accent' | 'ok' | 'warn' | 'bad' }) {
+  return <span class={'chip' + (tone ? ' chip-' + tone : '')}>{children}</span>;
+}
+
+export function formatClock(totalSec: number): string {
+  const neg = totalSec < 0;
+  const s = Math.abs(Math.round(totalSec));
+  const mm = Math.floor(s / 60);
+  const ss = s % 60;
+  return (neg ? '+' : '') + String(mm).padStart(2, '0') + ':' + String(ss).padStart(2, '0');
+}
+
+/** Countdown against a budget. Over budget shows "+mm:ss" in the warning color, with a text label. */
+export function Clock({ remaining, label = 'זמן שנותר' }: { remaining: number; label?: string }) {
+  const over = remaining < 0;
+  const low = !over && remaining <= 120;
+  return (
+    <span class={'clock-box' + (over ? ' is-over' : low ? ' is-low' : '')}>
+      <span class="sr-only">{over ? 'חריגה מהזמן' : label}</span>
+      <span class="clock" aria-hidden="false">
+        {formatClock(remaining)}
+      </span>
+    </span>
+  );
+}
+
+export function budgetLabel(sec?: number): string | null {
+  if (!sec) return null;
+  if (sec < 60) return `${sec} שנ'`;
+  const m = Math.round(sec / 60);
+  return m === 1 ? 'דקה' : `${m} דק'`;
+}

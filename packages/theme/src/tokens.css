@@ -1,0 +1,136 @@
+/*
+  Design tokens. Operations-room look: quiet neutral surfaces, ONE accent (field green),
+  and status colors (ok / warn / bad) reserved for feedback only.
+  Light and dark are designed as a pair; both meet 4.5:1 for body and muted text.
+*/
+:root {
+  color-scheme: light;
+  --bg: #eef1f3;
+  --surface: #ffffff;
+  --surface-2: #f6f8f9;
+  --ink: #141e27;
+  --muted: #54626d;
+  --line: #d3d9de;
+  --line-strong: #b4bec6;
+
+  --accent: #2f5a4c;
+  --accent-ink: #ffffff;
+  --accent-soft: #e2ede8;
+  --accent-line: #9fc0b2;
+
+  --ok: #1f6b44;
+  --ok-soft: #e1f1e7;
+  --warn: #9a4a12;
+  --warn-soft: #fbeedd;
+  --bad: #a12a25;
+  --bad-soft: #f9e4e2;
+  --mark: #ffd970;
+  --mark-ink: #1c1500;
+
+  --bubble-in: #ffffff;
+  --bubble-sys: #e6ebee;
+  --scrim: rgb(10 16 22 / 0.48);
+  --shadow-1: 0 1px 2px rgb(16 24 32 / 0.06), 0 1px 1px rgb(16 24 32 / 0.04);
+  --shadow-2: 0 8px 24px rgb(16 24 32 / 0.12), 0 2px 6px rgb(16 24 32 / 0.06);
+
+  --font: 'Heebo Variable', 'Heebo', 'Arial Hebrew', 'Segoe UI', Arial, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Consolas, monospace;
+
+  --fs-xs: 0.75rem;
+  --fs-sm: 0.875rem;
+  --fs-md: 1rem;
+  --fs-lg: 1.125rem;
+  --fs-xl: 1.375rem;
+  --fs-2xl: 1.75rem;
+
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+  --sp-7: 48px;
+
+  --radius-sm: 6px;
+  --radius: 10px;
+  --radius-lg: 14px;
+
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  --dur-press: 140ms;
+  --dur-fast: 180ms;
+  --dur-med: 240ms;
+
+  --z-sticky: 20;
+  --z-drawer: 40;
+  --z-toast: 60;
+  --z-watermark: 80;
+
+  --content-max: 760px;
+  --header-h: 56px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+    --bg: #0f151a;
+    --surface: #182128;
+    --surface-2: #1d2830;
+    --ink: #e5eaee;
+    --muted: #9eabb5;
+    --line: #2c3842;
+    --line-strong: #40505c;
+
+    --accent: #82b9a2;
+    --accent-ink: #0b1813;
+    --accent-soft: #1c2d26;
+    --accent-line: #3f6a5a;
+
+    --ok: #74c794;
+    --ok-soft: #17291f;
+    --warn: #e7a06a;
+    --warn-soft: #2f2116;
+    --bad: #ee8a83;
+    --bad-soft: #321b1a;
+    --mark: #6b5712;
+    --mark-ink: #fff3c4;
+
+    --bubble-in: #1f2a32;
+    --bubble-sys: #222e37;
+    --scrim: rgb(0 0 0 / 0.6);
+    --shadow-1: 0 1px 2px rgb(0 0 0 / 0.4);
+    --shadow-2: 0 10px 30px rgb(0 0 0 / 0.5);
+  }
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #0f151a;
+  --surface: #182128;
+  --surface-2: #1d2830;
+  --ink: #e5eaee;
+  --muted: #9eabb5;
+  --line: #2c3842;
+  --line-strong: #40505c;
+
+  --accent: #82b9a2;
+  --accent-ink: #0b1813;
+  --accent-soft: #1c2d26;
+  --accent-line: #3f6a5a;
+
+  --ok: #74c794;
+  --ok-soft: #17291f;
+  --warn: #e7a06a;
+  --warn-soft: #2f2116;
+  --bad: #ee8a83;
+  --bad-soft: #321b1a;
+  --mark: #6b5712;
+  --mark-ink: #fff3c4;
+
+  --bubble-in: #1f2a32;
+  --bubble-sys: #222e37;
+  --scrim: rgb(0 0 0 / 0.6);
+  --shadow-1: 0 1px 2px rgb(0 0 0 / 0.4);
+  --shadow-2: 0 10px 30px rgb(0 0 0 / 0.5);
+}

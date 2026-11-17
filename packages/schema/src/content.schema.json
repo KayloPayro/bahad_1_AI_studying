@@ -1,0 +1,258 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://lumdot.local/content.schema.json",
+  "title": "Lumda module content",
+  "type": "object",
+  "required": ["id", "slug", "version", "status", "title", "minutes", "tools", "units", "outcome", "steps"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "id": { "type": "string", "pattern": "^L\\d{2}$" },
+    "slug": { "type": "string", "pattern": "^l\\d{2}$" },
+    "version": { "type": "string", "pattern": "^\\d+\\.\\d+$" },
+    "status": { "enum": ["ready", "draft"] },
+    "title": { "type": "string", "minLength": 1 },
+    "subtitle": { "type": "string" },
+    "minutes": { "type": "integer", "minimum": 1, "maximum": 120 },
+    "tools": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+    "units": { "type": "array", "items": { "type": "integer" } },
+    "outcome": { "type": "string", "minLength": 1 },
+    "docs": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/definitions/doc" }
+    },
+    "steps": { "type": "array", "minItems": 1, "items": { "$ref": "#/definitions/step" } },
+    "score": {
+      "type": "object",
+      "required": ["parts"],
+      "properties": {
+        "parts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["metric", "max", "weight", "label"],
+            "properties": {
+              "metric": { "type": "string" },
+              "max": { "type": "number", "exclusiveMinimum": 0 },
+              "weight": { "type": "number", "minimum": 0 },
+              "label": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "levels": { "$ref": "#/definitions/levels" }
+      },
+      "additionalProperties": false
+    },
+    "instructorScript": {
+      "type": "object",
+      "required": ["title", "rows"],
+      "properties": {
+        "title": { "type": "string" },
+        "rows": {
+          "type": "array",
+          "items": { "type": "array", "items": { "type": "string" }, "minItems": 3, "maxItems": 3 }
+        },
+        "notes": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "doc": {
+      "type": "object",
+      "required": ["title", "paragraphs"],
+      "properties": {
+        "title": { "type": "string" },
+        "sub": { "type": "string" },
+        "paragraphs": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["title", "text"],
+            "properties": { "title": { "type": "string" }, "text": { "type": "string" } },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "levels": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["min", "label"],
+        "properties": { "min": { "type": "number" }, "label": { "type": "string" } },
+        "additionalProperties": false
+      }
+    },
+    "message": {
+      "type": "object",
+      "required": ["id", "t", "from", "text"],
+      "properties": {
+        "id": { "type": "string" },
+        "t": { "type": "number", "minimum": 0 },
+        "from": { "type": "string" },
+        "role": { "type": "string" },
+        "time": { "type": "string", "pattern": "^\\d{1,2}:\\d{2}$" },
+        "text": { "type": "string" },
+        "replaces": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "sample": {
+      "type": "object",
+      "required": ["label", "text"],
+      "properties": { "label": { "type": "string" }, "text": { "type": "string" } },
+      "additionalProperties": false
+    },
+    "rule": {
+      "type": "object",
+      "properties": {
+        "any": { "type": "array", "items": { "type": "string" } },
+        "all": { "type": "array", "items": { "type": "string" } },
+        "none": { "type": "array", "items": { "type": "string" } },
+        "flags": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "test": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": { "enum": ["rule", "firstLine", "minCitations", "maxWords", "minWords", "noTimeWindow"] },
+        "rule": { "$ref": "#/definitions/rule" },
+        "n": { "type": "integer", "minimum": 0 },
+        "from": { "type": "string" },
+        "to": { "type": "string" },
+        "keywords": { "type": "array", "items": { "type": "string" } },
+        "unless": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": false,
+      "allOf": [
+        { "if": { "properties": { "type": { "enum": ["rule", "firstLine"] } } }, "then": { "required": ["rule"] } },
+        {
+          "if": { "properties": { "type": { "enum": ["minCitations", "maxWords", "minWords"] } } },
+          "then": { "required": ["n"] }
+        },
+        {
+          "if": { "properties": { "type": { "const": "noTimeWindow" } } },
+          "then": { "required": ["from", "to", "keywords"] }
+        }
+      ]
+    },
+    "requirement": {
+      "type": "object",
+      "required": ["id", "label"],
+      "properties": {
+        "id": { "type": "string" },
+        "label": { "type": "string" },
+        "test": { "$ref": "#/definitions/test" },
+        "hint": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "step": {
+      "type": "object",
+      "required": ["id", "type", "title", "stage"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+        "type": {
+          "enum": [
+            "intro",
+            "chat",
+            "doc",
+            "cards",
+            "prompt",
+            "output",
+            "findings",
+            "checklist",
+            "text",
+            "freetext",
+            "key",
+            "bonus",
+            "custom"
+          ]
+        },
+        "title": { "type": "string" },
+        "stage": { "type": "integer", "minimum": 1, "maximum": 7 },
+        "budgetSec": { "type": "integer", "minimum": 0 },
+        "body": { "type": "array", "items": { "type": "string" } },
+        "why": { "type": "string" },
+        "instructor": { "type": "string" },
+        "messages": { "type": "array", "items": { "$ref": "#/definitions/message" } },
+        "docId": { "type": "string" },
+        "cards": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "topic", "text"],
+            "properties": { "id": { "type": "string" }, "topic": { "type": "string" }, "text": { "type": "string" } },
+            "additionalProperties": false
+          }
+        },
+        "mode": { "enum": ["all", "flip"] },
+        "metric": { "type": "string" },
+        "saveAs": { "type": "string" },
+        "requirements": { "type": "array", "items": { "$ref": "#/definitions/requirement" } },
+        "samples": { "type": "array", "items": { "$ref": "#/definitions/sample" } },
+        "snippets": { "type": "array", "items": { "$ref": "#/definitions/sample" } },
+        "askFirst": { "type": "boolean" },
+        "placeholder": { "type": "string" },
+        "numbersDoc": { "type": "string" },
+        "count": { "type": "integer", "minimum": 1 },
+        "product": {
+          "type": "object",
+          "required": ["title", "text"],
+          "properties": { "title": { "type": "string" }, "text": { "type": "string" } },
+          "additionalProperties": false
+        },
+        "hints": { "type": "string" },
+        "items": { "type": "array" },
+        "prompt": { "type": "string" },
+        "label": { "type": "string" },
+        "rows": { "type": "integer" },
+        "library": { "type": "boolean" },
+        "final": {
+          "type": "object",
+          "required": ["label"],
+          "properties": { "label": { "type": "string" }, "rows": { "type": "integer" } },
+          "additionalProperties": false
+        },
+        "note": { "type": "string" },
+        "levels": { "$ref": "#/definitions/levels" },
+        "example": {
+          "type": "object",
+          "required": ["title", "paragraphs"],
+          "properties": {
+            "title": { "type": "string" },
+            "paragraphs": { "type": "array", "items": { "type": "string" } }
+          },
+          "additionalProperties": false
+        },
+        "discussion": { "type": "array", "items": { "type": "string" } },
+        "message": { "type": "string" },
+        "lines": { "type": "array", "items": { "type": "string" } },
+        "name": { "type": "string" },
+        "data": { "type": "object" }
+      },
+      "additionalProperties": false,
+      "allOf": [
+        { "if": { "properties": { "type": { "const": "chat" } } }, "then": { "required": ["messages"] } },
+        { "if": { "properties": { "type": { "const": "doc" } } }, "then": { "required": ["docId"] } },
+        { "if": { "properties": { "type": { "const": "cards" } } }, "then": { "required": ["cards", "mode"] } },
+        { "if": { "properties": { "type": { "const": "output" } } }, "then": { "required": ["requirements"] } },
+        { "if": { "properties": { "type": { "const": "findings" } } }, "then": { "required": ["count"] } },
+        {
+          "if": { "properties": { "type": { "const": "checklist" } } },
+          "then": { "required": ["items", "metric"] }
+        },
+        { "if": { "properties": { "type": { "const": "freetext" } } }, "then": { "required": ["label"] } },
+        { "if": { "properties": { "type": { "const": "key" } } }, "then": { "required": ["items", "metric"] } },
+        { "if": { "properties": { "type": { "const": "bonus" } } }, "then": { "required": ["lines"] } },
+        { "if": { "properties": { "type": { "const": "custom" } } }, "then": { "required": ["name"] } }
+      ]
+    }
+  }
+}

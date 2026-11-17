@@ -1,0 +1,13 @@
+{
+  "name": "@lumda/schema",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./content.schema.json": "./src/content.schema.json"
+  },
+  "dependencies": {
+    "@lumda/checkers": "*"
+  }
+}

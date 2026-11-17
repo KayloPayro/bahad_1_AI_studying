@@ -1,0 +1,16 @@
+{
+  "name": "@lumda/theme",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./tokens.css": "./src/tokens.css",
+    "./base.css": "./src/base.css",
+    "./components.css": "./src/components.css",
+    "./all.css": "./src/all.css"
+  },
+  "dependencies": {
+    "@fontsource-variable/heebo": "^5.3.0",
+    "@fontsource/ibm-plex-mono": "^5.3.0"
+  }
+}
