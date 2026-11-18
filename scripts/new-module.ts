@@ -84,8 +84,8 @@ export function indexHtml(title: string, entry = './src/main.tsx') {
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="color-scheme" content="light dark" />
-    <meta name="theme-color" content="#2f5a4c" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#0f151a" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#fffdf8" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#1d1a16" media="(prefers-color-scheme: dark)" />
     <meta name="description" content="לומדות AI לצוערים" />
     <title>${title}</title>
     <link rel="manifest" href="%SITE_BASE%manifest.webmanifest" />

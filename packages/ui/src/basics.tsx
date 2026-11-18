@@ -2,6 +2,12 @@ import { createContext, type ComponentChildren } from 'preact';
 import { useContext } from 'preact/hooks';
 import { config } from '@lumda/config';
 import { Rich } from './rich';
+import emblemUrl from './emblem.svg';
+
+/** The Bahad 1 symbol. It carries its own black ring, so it sits on any surface in both themes. */
+export function Emblem({ size = 32 }: { size?: number }) {
+  return <img class="emblem" src={emblemUrl} alt="" width={size} height={size} decoding="async" />;
+}
 
 export const InstructorContext = createContext(false);
 export const useInstructor = () => useContext(InstructorContext);

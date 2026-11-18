@@ -10,7 +10,7 @@ import { chromium } from '@playwright/test';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const out = resolve(root, 'apps/site/public/icons');
-const BG = '#14212a';
+const BG = '#f2eee5'; // paper, see DESIGN.md
 mkdirSync(out, { recursive: true });
 
 const svg = readFileSync(resolve(root, 'Bahad_1_Symbol.svg'), 'utf8')
@@ -20,11 +20,11 @@ const svg = readFileSync(resolve(root, 'Bahad_1_Symbol.svg'), 'utf8')
   .trim();
 writeFileSync(resolve(out, 'symbol.svg'), svg + '\n');
 
-// favicon: symbol on a rounded dark square
+// favicon: the round symbol on its own; its black ring reads on light and dark tabs
 const inner = svg.replace(/^<svg[^>]*>/, '').replace(/<\/svg>\s*$/, '');
 writeFileSync(
   resolve(out, 'favicon.svg'),
-  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800"><rect width="800" height="800" rx="160" fill="${BG}"/><g transform="translate(60 60) scale(0.85)">${inner}</g></svg>\n`,
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800">${inner}</svg>\n`,
 );
 
 const targets: { file: string; size: number; pad: number; radius: number }[] = [

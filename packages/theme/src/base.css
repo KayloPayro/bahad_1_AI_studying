@@ -1,4 +1,4 @@
-@import '@fontsource-variable/heebo/index.css';
+@import '@fontsource-variable/noto-sans-hebrew/wdth.css';
 @import '@fontsource/ibm-plex-mono/latin-500.css';
 @import './tokens.css';
 
@@ -20,8 +20,9 @@ body {
   background: var(--bg);
   color: var(--ink);
   font-family: var(--font);
+  font-stretch: 100%;
   font-size: var(--fs-md);
-  line-height: 1.65;
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
   overflow-x: hidden;
@@ -36,7 +37,11 @@ h1,
 h2,
 h3,
 h4 {
-  line-height: 1.25;
+  font-family: var(--font-display);
+  font-stretch: var(--stretch-display);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: 0;
   text-wrap: balance;
   margin: 0;
 }
@@ -46,7 +51,9 @@ p {
 }
 
 a {
-  color: var(--accent);
+  color: var(--red-text);
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
 }
 
 [hidden] {
@@ -54,8 +61,13 @@ a {
 }
 
 :focus-visible {
-  outline: 3px solid var(--accent);
-  outline-offset: 2px;
+  outline: 3px solid var(--ink);
+  outline-offset: 3px;
+}
+
+::selection {
+  background: var(--gold);
+  color: var(--gold-ink);
 }
 
 .mono,
@@ -67,6 +79,11 @@ a {
 
 .num {
   font-variant-numeric: tabular-nums;
+}
+
+.display {
+  font-family: var(--font-display);
+  font-stretch: var(--stretch-display);
 }
 
 .sr-only {
@@ -83,24 +100,24 @@ a {
 
 .skip-link {
   position: absolute;
-  inset-inline-start: var(--sp-3);
+  right: var(--sp-3);
   top: -100px;
   z-index: 100;
-  background: var(--accent);
-  color: var(--accent-ink);
+  background: var(--btn);
+  color: var(--btn-ink);
   padding: var(--sp-2) var(--sp-4);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius);
   font-weight: 700;
 }
 .skip-link:focus {
   top: calc(env(safe-area-inset-top, 0px) + var(--sp-2));
 }
 
+/* Reduced motion keeps opacity and colour; movement is removed per component. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
-    transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     scroll-behavior: auto !important;

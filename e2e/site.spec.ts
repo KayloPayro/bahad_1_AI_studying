@@ -66,7 +66,7 @@ test.describe('home and entry', () => {
     const page = await ctx.newPage();
     await page.goto('/');
     const bg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
-    expect(bg).toBe('rgb(15, 21, 26)');
+    expect(bg).toBe('rgb(19, 17, 14)'); // --bg dark, DESIGN.md
     await ctx.close();
   });
 });

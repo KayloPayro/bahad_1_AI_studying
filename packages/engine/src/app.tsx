@@ -24,6 +24,7 @@ import {
   Watermark,
   Why,
   type ChatControls,
+  Emblem,
 } from '@lumda/ui';
 import { computeScore } from './score';
 import { emptyRun, loadRun, resetRun, saveRun, type RunState } from './run';
@@ -92,9 +93,7 @@ function TopBar({ title, children }: { title: string; children?: preact.Componen
     <header class="topbar">
       <div class="topbar-in">
         <a class="home-link" href={SITE_BASE} aria-label="לכל הלומדות">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <path d="M9 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round" />
-          </svg>
+          <Emblem size={34} />
           <span class="home-text">כל הלומדות</span>
         </a>
         <span class="topbar-title">{title}</span>
