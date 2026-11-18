@@ -27,7 +27,7 @@ export async function mockTracking(page: Page, opts: { offline?: boolean } = {})
 export async function login(page: Page, path: string, pn = '9324493', team = '18') {
   await page.goto(path);
   await page.getByLabel('מספר אישי').fill(pn);
-  await page.getByLabel('צוות').selectOption(team);
+  await page.getByLabel('צוות', { exact: true }).selectOption(team);
   await page.getByRole('button', { name: 'כניסה' }).click();
 }
 
