@@ -1,7 +1,9 @@
 import {
   countCitations,
+  countLines,
   firstLine,
   matchRule,
+  re,
   timeWindowViolations,
   wordCount,
   type Rule,
@@ -15,6 +17,7 @@ export type AutoTest =
   | { type: 'minCitations'; n: number }
   | { type: 'maxWords'; n: number }
   | { type: 'minWords'; n: number }
+  | { type: 'maxLines'; n: number }
   | ({ type: 'noTimeWindow' } & TimeWindowOptions);
 
 export interface TestResult {
@@ -27,6 +30,13 @@ export function runAutoTest(test: AutoTest, text: string): TestResult {
   switch (test.type) {
     case 'rule': {
       const pass = matchRule(text, test.rule);
+      const { any, all, none } = test.rule;
+      if (none?.length && !any?.length && !all?.length) {
+        // A "must not appear" rule: say what was found, not "found in text" for a pass.
+        const flags = test.rule.flags ?? 'u';
+        const hit = none.map((s) => re(s, flags).exec(text)?.[0]).find(Boolean);
+        return { pass, detail: pass ? 'לא נמצאו מילים שאסור שיופיעו' : `נמצא: "${hit}"` };
+      }
       return { pass, detail: pass ? 'נמצא בטקסט' : 'לא נמצא בטקסט' };
     }
     case 'firstLine': {
@@ -46,6 +56,10 @@ export function runAutoTest(test: AutoTest, text: string): TestResult {
     case 'minWords': {
       const n = wordCount(text);
       return { pass: n >= test.n, detail: `אורך: ${n} מילים (לפחות ${test.n})` };
+    }
+    case 'maxLines': {
+      const n = countLines(text);
+      return { pass: n <= test.n, detail: `אורך: ${n} שורות (עד ${test.n})` };
     }
     case 'noTimeWindow': {
       const lines = timeWindowViolations(text, test);

@@ -11,3 +11,4 @@ export * from './cards';
 export * from './entry';
 export * from './dialog';
 export * from './theme';
+export * from './matrix';

@@ -16,6 +16,8 @@
     "dev": "npm run dev -w @lumda/site",
     "dev:l01": "npm run dev -w @lumda/l01",
     "dev:l02": "npm run dev -w @lumda/l02",
+    "dev:l03": "npm run dev -w @lumda/l03",
+    "dev:l04": "npm run dev -w @lumda/l04",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint .",
     "format": "prettier --write .",

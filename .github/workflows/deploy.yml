@@ -1,8 +1,12 @@
 name: Deploy to GitHub Pages
 
+# One Pages site, two versions:
+#   /<repo>/       built from main  ("לומדות AI לצוערים", the real site)
+#   /<repo>/dev/   built from dev   ("לומדות AI פיתוח", the preview)
+# A push to either branch rebuilds both, so the two always match their branches.
 on:
   push:
-    branches: [main]
+    branches: [main, dev]
   workflow_dispatch:
 
 permissions:
@@ -14,28 +18,60 @@ concurrency:
   group: pages
   cancel-in-progress: false
 
+env:
+  # Lockfile was made on Windows, so the Linux native binaries are installed separately.
+  LINUX_BINARIES: '@rolldown/binding-linux-x64-gnu@1.2.19 lightningcss-linux-x64-gnu@1.33.0 @esbuild/linux-x64@0.28.2 @rollup/rollup-linux-x64-gnu@4.68.5'
+
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main
+          path: main
+      - uses: actions/checkout@v4
+        with:
+          ref: dev
+          path: dev
       - uses: actions/setup-node@v4
         with:
-          node-version-file: .nvmrc
+          node-version-file: main/.nvmrc
           cache: npm
-      - run: npm ci
-      - name: Install Linux native binaries (lockfile was made on Windows)
-        run: npm install --no-save --no-package-lock @rolldown/binding-linux-x64-gnu@1.2.19 lightningcss-linux-x64-gnu@1.33.0 @esbuild/linux-x64@0.28.2 @rollup/rollup-linux-x64-gnu@4.68.5
-      - run: npm run validate
-      - name: Build site and all modules
-        run: npm run build:all
+          cache-dependency-path: |
+            main/package-lock.json
+            dev/package-lock.json
+
+      - name: Build main (the real site)
+        working-directory: main
+        run: |
+          npm ci
+          npm install --no-save --no-package-lock $LINUX_BINARIES
+          npm run validate
+          npm run build:all
         env:
-          # Project pages live under /<repo>/
           BASE_PATH: /${{ github.event.repository.name }}/
+
+      - name: Build dev (the preview)
+        working-directory: dev
+        run: |
+          npm ci
+          npm install --no-save --no-package-lock $LINUX_BINARIES
+          npm run validate
+          npm run build:all
+        env:
+          BASE_PATH: /${{ github.event.repository.name }}/dev/
+          SITE_TITLE: לומדות AI פיתוח
+          SITE_SHORT: AI פיתוח
+          STORAGE_NS: 'dev:'
+
+      - name: Put the preview under /dev/
+        run: cp -r dev/dist main/dist/dev
+
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
+          path: main/dist
 
   deploy:
     needs: build

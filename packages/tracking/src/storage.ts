@@ -4,12 +4,16 @@
  */
 const memory = new Map<string, string>();
 
+/** Preview builds prefix every key. The theme stays shared: a tiny script in each page reads it before the app loads. */
+const NS = typeof __STORAGE_NS__ === 'string' ? __STORAGE_NS__ : '';
+const k = (key: string) => (key === 'lumda.theme' ? key : NS + key);
+
 function ls(): Storage | null {
   try {
     const s = globalThis.localStorage;
-    const k = '__lumda_probe__';
-    s.setItem(k, '1');
-    s.removeItem(k);
+    const probe = '__lumda_probe__';
+    s.setItem(probe, '1');
+    s.removeItem(probe);
     return s;
   } catch {
     return null;
@@ -17,6 +21,7 @@ function ls(): Storage | null {
 }
 
 export function getItem(key: string): string | null {
+  key = k(key);
   try {
     const s = ls();
     if (s) return s.getItem(key);
@@ -27,6 +32,7 @@ export function getItem(key: string): string | null {
 }
 
 export function setItem(key: string, value: string): void {
+  key = k(key);
   try {
     const s = ls();
     if (s) {
@@ -40,6 +46,7 @@ export function setItem(key: string, value: string): void {
 }
 
 export function removeItem(key: string): void {
+  key = k(key);
   try {
     ls()?.removeItem(key);
   } catch {

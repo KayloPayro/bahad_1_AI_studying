@@ -13,11 +13,18 @@ export function siteBase(): string {
   return b;
 }
 
-/** Replaces %SITE_BASE% in index.html (manifest, icons, theme bootstrap). */
+/** Site name shown in the UI. A preview build (the dev branch) sets SITE_TITLE to tell itself apart from the real site. */
+export const siteTitle = (): string | undefined => process.env.SITE_TITLE || undefined;
+
+/** Replaces %SITE_BASE% and %SITE_TITLE% in index.html (manifest, icons, theme bootstrap, page title). */
 function siteBaseHtml(base: string): Plugin {
   return {
     name: 'lumda-site-base',
-    transformIndexHtml: (html) => html.replaceAll('%SITE_BASE%', base),
+    transformIndexHtml: (html) =>
+      html
+        .replaceAll('%SITE_BASE%', base)
+        .replaceAll('%SITE_TITLE%', siteTitle() ?? 'לומדות AI לצוערים')
+        .replaceAll('%SITE_SHORT%', process.env.SITE_SHORT || 'לומדות AI'),
   };
 }
 
@@ -33,7 +40,13 @@ export function lumdaConfig(root: string, path: string, extra: UserConfig = {}):
     root,
     base: base + path,
     plugins: [preact(), siteBaseHtml(base), ...(extra.plugins ?? [])],
-    define: { __SITE_BASE__: JSON.stringify(base), ...extra.define },
+    define: {
+      __SITE_BASE__: JSON.stringify(base),
+      __SITE_TITLE__: JSON.stringify(siteTitle() ?? ''),
+      // The real site and the preview share one host, so the preview keeps its own saved progress.
+      __STORAGE_NS__: JSON.stringify(process.env.STORAGE_NS ?? ''),
+      ...extra.define,
+    },
     // All workspaces emit hashed assets that build-all merges into one shared /assets/ folder, so identical
     // files (fonts, shared chunks) exist once on the site and once in the offline cache.
     experimental: {

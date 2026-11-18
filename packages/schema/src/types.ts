@@ -135,6 +135,10 @@ export interface PromptStep extends StepBase {
   askFirst?: boolean;
   /** Doc to offer for copying together with the prompt. */
   docId?: string;
+  /** Wording for the attach checkbox, e.g. "התמלול של המ״פ". Default: "המסמך". */
+  attachLabel?: string;
+  /** Follow-up prompt: sent in the conversation already open, so there are no "open in tool" links. */
+  sameChat?: boolean;
   metric?: string;
   placeholder?: string;
 }
@@ -145,6 +149,8 @@ export interface OutputStep extends StepBase {
   /** Run the number check against this doc. */
   numbersDoc?: string;
   metric?: string;
+  /** Prompt templates shown above the paste box (copy + open in tool). */
+  snippets?: Sample[];
 }
 export interface FindingsStep extends StepBase {
   type: 'findings';
@@ -176,6 +182,8 @@ export interface FreeTextStep extends StepBase {
   copyable?: boolean;
   /** Saves the text into the per-cadet prompt library. */
   library?: boolean;
+  /** Id of an earlier step whose text starts in this field, until the cadet edits it. */
+  prefillFrom?: string;
 }
 export interface KeyStep extends StepBase {
   type: 'key';

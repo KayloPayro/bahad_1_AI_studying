@@ -16,6 +16,7 @@ const env = (import.meta as ImportMeta & { env?: Record<string, string | undefin
 
 export const config: SiteConfig = {
   ...(raw as SiteConfig),
+  SITE_TITLE: (typeof __SITE_TITLE__ === 'string' && __SITE_TITLE__) || (raw as SiteConfig).SITE_TITLE,
   TRACKING_URL: env.VITE_TRACKING_URL || (raw as SiteConfig).TRACKING_URL,
 };
 

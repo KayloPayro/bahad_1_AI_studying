@@ -21,6 +21,7 @@ export function PromptEditor({
   askFirst,
   onAskFirst,
   attach,
+  sameChat,
   onMet,
   placeholder = 'כתוב כאן את ההנחיה',
   checked: checkedInit = false,
@@ -34,6 +35,8 @@ export function PromptEditor({
   onAskFirst?: () => void;
   /** Extra text (e.g. the document) appended when copying to the tool. */
   attach?: { label: string; text: string };
+  /** The prompt goes into the conversation that is already open: no "open in tool" links (they start a new chat). */
+  sameChat?: boolean;
   onMet?: (n: number) => void;
   placeholder?: string;
   checked?: boolean;
@@ -135,7 +138,11 @@ export function PromptEditor({
             העתק את ההנחיה
           </button>
         </div>
-        <OpenInTool getText={fullText} />
+        {sameChat ? (
+          <p class="note">העתק, חזור לשיחה שכבר פתחת בכלי, הדבק ושלח. אל תפתח שיחה חדשה.</p>
+        ) : (
+          <OpenInTool getText={fullText} />
+        )}
       </div>
     </div>
   );

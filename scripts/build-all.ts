@@ -6,7 +6,7 @@
  *   dist/sw.js                     ← offline cache for all of the above
  * BASE_PATH sets the site root (e.g. "/bahad_1_AI_studying/" on GitHub Pages; default "/").
  */
-import { cpSync, existsSync, readdirSync, rmSync, writeFileSync, mkdirSync } from 'node:fs';
+import { cpSync, existsSync, readFileSync, readdirSync, rmSync, writeFileSync, mkdirSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { build } from 'vite';
@@ -40,6 +40,15 @@ for (const t of targets) {
     else cpSync(from, resolve(out, t.path, entry.name), { recursive: true });
   }
   console.log(`built ${t.dir.padEnd(32)} → /${t.path}  (${Date.now() - started} ms)`);
+}
+
+// A preview build renames the installed app, so it is not mistaken for the real one on the home screen.
+if (process.env.SITE_TITLE) {
+  const mf = resolve(out, 'manifest.webmanifest');
+  const m = JSON.parse(readFileSync(mf, 'utf8'));
+  m.name = process.env.SITE_TITLE;
+  m.short_name = process.env.SITE_SHORT || process.env.SITE_TITLE;
+  writeFileSync(mf, JSON.stringify(m, null, 2));
 }
 
 // GitHub Pages: serve files starting with "_" and skip Jekyll.

@@ -6,8 +6,8 @@ test.describe('home and entry', () => {
     await page.goto('/');
     await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
     await expect(page.getByRole('heading', { level: 1, name: 'לומדות AI לצוערים' })).toBeVisible();
-    await expect(page.locator('#h-ready + .mod-list > li')).toHaveCount(2);
-    await expect(page.locator('#h-drafts ~ .mod-list > li')).toHaveCount(10);
+    await expect(page.locator('#h-ready + .mod-list > li')).toHaveCount(4);
+    await expect(page.locator('#h-drafts ~ .mod-list > li')).toHaveCount(8);
     await expectWatermark(page);
     await expectNoHorizontalScroll(page);
   });

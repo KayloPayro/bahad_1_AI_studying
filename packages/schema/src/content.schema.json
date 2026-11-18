@@ -121,7 +121,7 @@
       "type": "object",
       "required": ["type"],
       "properties": {
-        "type": { "enum": ["rule", "firstLine", "minCitations", "maxWords", "minWords", "noTimeWindow"] },
+        "type": { "enum": ["rule", "firstLine", "minCitations", "maxWords", "minWords", "maxLines", "noTimeWindow"] },
         "rule": { "$ref": "#/definitions/rule" },
         "n": { "type": "integer", "minimum": 0 },
         "from": { "type": "string" },
@@ -136,7 +136,7 @@
           "then": { "required": ["rule"] }
         },
         {
-          "if": { "properties": { "type": { "enum": ["minCitations", "maxWords", "minWords"] } } },
+          "if": { "properties": { "type": { "enum": ["minCitations", "maxWords", "minWords", "maxLines"] } } },
           "then": { "required": ["n"] }
         },
         {
@@ -208,6 +208,9 @@
         "askFirst": { "type": "boolean" },
         "toolGuide": { "type": "boolean" },
         "copyable": { "type": "boolean" },
+        "attachLabel": { "type": "string" },
+        "sameChat": { "type": "boolean" },
+        "prefillFrom": { "type": "string" },
         "placeholder": { "type": "string" },
         "numbersDoc": { "type": "string" },
         "count": { "type": "integer", "minimum": 1 },

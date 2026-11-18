@@ -36,8 +36,14 @@ export function firstLine(text: string): string {
   return line.replace(/^[#*\-\s>]+/, '').trim();
 }
 
+/** Words only: table pipes, dashes and bullets are not counted. */
 export function wordCount(text: string): number {
-  return (text.trim().match(/\S+/g) ?? []).length;
+  return (text.match(/\S+/g) ?? []).filter((w) => /[\p{L}\p{N}]/u.test(w)).length;
+}
+
+/** Non-empty lines. */
+export function countLines(text: string): number {
+  return text.split(/\r?\n/).filter((l) => l.trim()).length;
 }
 
 /** Counts paragraph citations: "פסקה 3", "פסקאות 4, 11" or a bare "(3, 12)". */

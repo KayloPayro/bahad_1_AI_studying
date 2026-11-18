@@ -95,7 +95,8 @@ function PromptView({ step, content, data, setData, setMetric, ctx }: StepProps<
       samples={step.samples}
       askFirst={step.askFirst}
       onAskFirst={ctx.askFirst}
-      attach={doc && step.docId ? { label: 'המסמך', text: ctx.docText(step.docId) } : undefined}
+      attach={doc && step.docId ? { label: step.attachLabel ?? 'המסמך', text: ctx.docText(step.docId) } : undefined}
+      sameChat={step.sameChat}
       placeholder={step.placeholder}
       checked={Boolean(data.checked)}
       onChecked={(v) => setData({ checked: v })}
@@ -106,18 +107,23 @@ function PromptView({ step, content, data, setData, setMetric, ctx }: StepProps<
 
 function OutputView({ step, data, setData, setMetric, ctx }: StepProps<OutputStep>) {
   return (
-    <OutputBox
-      value={str(data.text)}
-      onChange={(v) => setData({ text: v })}
-      requirements={step.requirements}
-      samples={step.samples}
-      numberIndex={step.numbersDoc ? ctx.numberIndex(step.numbersDoc) : undefined}
-      manual={bools(data.manual)}
-      onManual={(id, v) => setData({ manual: { ...bools(data.manual), [id]: v } })}
-      checked={Boolean(data.checked)}
-      onChecked={(v) => setData({ checked: v })}
-      onMet={(n) => step.metric && setMetric(step.metric, n)}
-    />
+    <div>
+      {step.snippets?.map((s) => (
+        <Snippet key={s.label} s={s} />
+      ))}
+      <OutputBox
+        value={str(data.text)}
+        onChange={(v) => setData({ text: v })}
+        requirements={step.requirements}
+        samples={step.samples}
+        numberIndex={step.numbersDoc ? ctx.numberIndex(step.numbersDoc) : undefined}
+        manual={bools(data.manual)}
+        onManual={(id, v) => setData({ manual: { ...bools(data.manual), [id]: v } })}
+        checked={Boolean(data.checked)}
+        onChecked={(v) => setData({ checked: v })}
+        onMet={(n) => step.metric && setMetric(step.metric, n)}
+      />
+    </div>
   );
 }
 
@@ -221,7 +227,8 @@ function TextView({ step }: StepProps<TextStep>) {
 
 function FreeTextView({ step, content, data, setData, ctx }: StepProps<FreeTextStep>) {
   const id = useId();
-  const text = str(data.text);
+  const prefill = step.prefillFrom ? str(ctx.stepData(step.prefillFrom).text) : '';
+  const text = typeof data.text === 'string' ? data.text : prefill;
   return (
     <div>
       {step.snippets?.map((s) => (

@@ -1226,6 +1226,52 @@ select.input {
   content: '✕ ';
 }
 
+/* Matrix: one label, several statuses side by side (comparison of attempts, progress across rounds). */
+.status-na {
+  color: var(--muted);
+  background: var(--surface-2);
+}
+.matrix {
+  list-style: none;
+  margin: var(--sp-3) 0 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.matrix-row {
+  display: grid;
+  gap: 2px;
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  font-size: var(--fs-sm);
+}
+.matrix-label,
+.matrix-note {
+  margin: 0;
+}
+.matrix-note {
+  color: var(--muted);
+  font-size: var(--fs-xs);
+}
+.matrix-cells {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2) var(--sp-4);
+  margin-top: var(--sp-1);
+}
+.matrix-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+.matrix-head {
+  color: var(--muted);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+}
+
 .send {
   margin-top: var(--sp-4);
   padding-top: var(--sp-3);
