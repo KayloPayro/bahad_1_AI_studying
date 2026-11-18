@@ -201,13 +201,15 @@ interface RunTimes {
 
 /**
  * Two timed runs of the same task, by hand and with an AI tool. The clock covers everything the cadet does,
- * including opening the tool and checking the result. The score only asks that both runs were done.
+ * including opening the tool and checking the result. Each run ends with a short report of what the cadet got,
+ * and the key (what was really there) opens only after both runs. The score only asks that both runs were done:
+ * the time depends on the tool and the network, which are not in the cadet's control.
  * data: { tasks, note? }, metric = number of tasks with both runs timed.
  */
 export function Stopwatch({ step, content, data, setData, setMetric, ctx }: StepProps<CustomStep>) {
   const tasks = (step.data?.tasks ?? []) as RaceTask[];
   const times = rec<RunTimes>(data.times);
-  const reports = rec<string>(data.reports);
+  const reports = rec<string>(data.reports); // `${taskId}:${mode}` -> what the cadet reported for that run
   const [run, setRun] = useState<{ id: string; mode: 'manual' | 'ai'; at: number } | null>(null);
   const [, tick] = useState(0);
   useEffect(() => {
@@ -225,7 +227,8 @@ export function Stopwatch({ step, content, data, setData, setMetric, ctx }: Step
     const next = { ...times, [run.id]: { ...times[run.id], [run.mode]: sec } };
     setData({ times: next });
     setRun(null);
-    if (step.metric) setMetric(step.metric, tasks.filter((x) => next[x.id]?.manual !== undefined && next[x.id]?.ai !== undefined).length);
+    if (step.metric)
+      setMetric(step.metric, tasks.filter((x) => next[x.id]?.manual !== undefined && next[x.id]?.ai !== undefined).length);
   };
 
   return (
@@ -253,74 +256,83 @@ export function Stopwatch({ step, content, data, setData, setMetric, ctx }: Step
                 </details>
               ) : null;
             })}
-            <div class="field">
-              <label class="field-label" for={`rep-${t.id}`}>
-                {t.report.label}
-              </label>
-              {t.report.kind === 'count' ? (
-                <select
-                  id={`rep-${t.id}`}
-                  class="input"
-                  value={reports[t.id] ?? ''}
-                  onChange={(e) => setData({ reports: { ...reports, [t.id]: (e.currentTarget as HTMLSelectElement).value } })}
-                >
-                  <option value="">בחר מספר</option>
-                  {Array.from({ length: (t.report.max ?? 8) + 1 }, (_, i) => (
-                    <option key={i} value={String(i)}>
-                      {i}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <textarea
-                  id={`rep-${t.id}`}
-                  class="textarea"
-                  rows={3}
-                  dir="auto"
-                  value={reports[t.id] ?? ''}
-                  onInput={(e) => setData({ reports: { ...reports, [t.id]: (e.currentTarget as HTMLTextAreaElement).value } })}
-                />
-              )}
-              <p class="field-help">עדכן את השדה בסוף כל ריצה, לפני שאתה עוצר את השעון.</p>
-            </div>
-            {(['manual', 'ai'] as const).map((mode) => {
-              const active = run?.id === t.id && run.mode === mode;
-              const val = tm[mode];
-              return (
-                <div key={mode} class="race-run">
-                  <strong class="race-mode">{mode === 'manual' ? 'ידני' : 'עם AI'}</strong>
-                  <span class="clock race-time" aria-live="off">
-                    {active ? mmss((Date.now() - run!.at) / 1000) : val !== undefined ? mmss(val) : '–:––'}
-                  </span>
-                  {active ? (
-                    <button type="button" class="btn btn-primary" onClick={stop}>
-                      עצור שעון
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      class="btn btn-secondary"
-                      disabled={Boolean(run)}
-                      onClick={() => {
-                        setRun({ id: t.id, mode, at: Date.now() });
-                      }}
-                    >
-                      {val !== undefined ? 'מדוד שוב' : 'התחל שעון'}
-                    </button>
-                  )}
-                </div>
-              );
-            })}
             {t.prompt && (
               <details class="race-doc">
                 <summary>ההנחיה לריצה עם AI</summary>
                 <Snippet s={sample} />
               </details>
             )}
+            {(['manual', 'ai'] as const).map((mode) => {
+              const active = run?.id === t.id && run.mode === mode;
+              const val = tm[mode];
+              const key = `${t.id}:${mode}`;
+              const label = mode === 'manual' ? 'ידני' : 'עם AI';
+              return (
+                <div key={mode} class="race-run-block">
+                  <div class="race-run">
+                    <strong class="race-mode">{label}</strong>
+                    <span class="clock race-time" aria-live="off">
+                      {active ? mmss((Date.now() - run!.at) / 1000) : val !== undefined ? mmss(val) : '–:––'}
+                    </span>
+                    {active ? (
+                      <button type="button" class="btn btn-primary" onClick={stop}>
+                        עצור שעון, {label}
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        class="btn btn-secondary"
+                        disabled={Boolean(run)}
+                        onClick={() => setRun({ id: t.id, mode, at: Date.now() })}
+                      >
+                        {val !== undefined ? 'מדוד שוב' : 'התחל שעון'}, {label}
+                      </button>
+                    )}
+                  </div>
+                  <div class="field">
+                    <label class="field-label" for={`rep-${key}`}>
+                      {t.report.label} ({label})
+                    </label>
+                    {t.report.kind === 'count' ? (
+                      <select
+                        id={`rep-${key}`}
+                        class="input"
+                        value={reports[key] ?? ''}
+                        onChange={(e) => setData({ reports: { ...reports, [key]: (e.currentTarget as HTMLSelectElement).value } })}
+                      >
+                        <option value="">בחר מספר</option>
+                        {Array.from({ length: (t.report.max ?? 8) + 1 }, (_, i) => (
+                          <option key={i} value={String(i)}>
+                            {i}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <textarea
+                        id={`rep-${key}`}
+                        class="textarea"
+                        rows={3}
+                        dir="auto"
+                        value={reports[key] ?? ''}
+                        onInput={(e) =>
+                          setData({ reports: { ...reports, [key]: (e.currentTarget as HTMLTextAreaElement).value } })
+                        }
+                      />
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+            <p class="field-help">עדכן את שדה הדיווח של הריצה לפני שאתה עוצר את השעון שלה.</p>
             {both(t.id) && (
               <div class="race-sum" aria-live="polite">
                 <p class="result-sum">
-                  ידני: <strong class="num">{mmss(tm.manual!)}</strong>. עם AI: <strong class="num">{mmss(tm.ai!)}</strong>.
+                  ידני: <strong class="num">{mmss(tm.manual!)}</strong>. עם AI: <strong class="num">{mmss(tm.ai!)}</strong>.{' '}
+                  {tm.manual! === tm.ai!
+                    ? 'אותו זמן.'
+                    : tm.manual! < tm.ai!
+                      ? 'בפעם הזו ידני היה מהיר יותר.'
+                      : 'בפעם הזו הריצה עם AI הייתה מהירה יותר.'}
                 </p>
                 {t.key && (
                   <>
@@ -337,7 +349,8 @@ export function Stopwatch({ step, content, data, setData, setMetric, ctx }: Step
                       </ol>
                     )}
                     <p class="note">
-                      מה שדיווחת: <bdi>{reports[t.id] || 'לא דיווחת'}</bdi>
+                      מה שדיווחת, ידני: <bdi>{reports[`${t.id}:manual`] || 'לא דיווחת'}</bdi>. עם AI:{' '}
+                      <bdi>{reports[`${t.id}:ai`] || 'לא דיווחת'}</bdi>.
                     </p>
                   </>
                 )}

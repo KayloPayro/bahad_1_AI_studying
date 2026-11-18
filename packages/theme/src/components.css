@@ -2240,6 +2240,11 @@ mark.num-derived {
 .race-sum {
   margin-top: var(--sp-3);
 }
+.race-run-block {
+  margin-top: var(--sp-3);
+  padding-top: var(--sp-2);
+  border-top: 1px dotted var(--line-strong);
+}
 
 .mark-product {
   box-shadow: none;

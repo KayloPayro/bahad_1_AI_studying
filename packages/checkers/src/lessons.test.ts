@@ -3,6 +3,7 @@ import l05 from '../../../modules/l05-unfamiliar-topic/content.json';
 import l06 from '../../../modules/l06-tasks-to-calendar/content.json';
 import l07 from '../../../modules/l07-workday/content.json';
 import l08 from '../../../modules/l08-connected-tools/content.json';
+import l09 from '../../../modules/l09-when-not/content.json';
 import type { ModuleContent, OutputStep, PromptStep } from '../../schema/src/types';
 import { runAutoTest } from './auto';
 import { fillDates, nextWeekDates } from './dates';
@@ -278,5 +279,55 @@ describe('L08 connected tools', () => {
   });
   it('the weights add up to 100', () => {
     expect(c8.score!.parts.reduce((s, p) => s + p.weight, 0)).toBe(100);
+  });
+});
+
+describe('L09 when not', () => {
+  const c9 = l09 as unknown as Content;
+  const race = step<{ data: { tasks: { id: string; key?: { items: string[] }; docIds?: string[]; prompt?: string }[] } }>(c9, 'race').data.tasks;
+  const paras = (id: string) => c9.docs![id]!.paragraphs.map((p) => p.text);
+
+  it('the two procedure versions differ in exactly six paragraphs, and the key lists six differences', () => {
+    const a = paras('proc1');
+    const b = paras('proc2');
+    expect(a).toHaveLength(8);
+    expect(b).toHaveLength(8);
+    const diff = a.map((t, i) => (t === b[i] ? -1 : i)).filter((i) => i >= 0);
+    expect(diff).toEqual([1, 2, 3, 4, 5, 6]);
+    expect(race.find((t) => t.id === 'long')!.key!.items).toHaveLength(6);
+  });
+  it('each key item names a fact that really is in the paragraph it is about', () => {
+    const a = paras('proc1');
+    const b = paras('proc2');
+    expect(a[1]).toContain('שלושה מכשירי קשר');
+    expect(b[1]).toContain('ארבעה מכשירי קשר');
+    expect(a[2]).toContain('06:00');
+    expect(b[2]).toContain('06:30');
+    expect(a[3]).toContain('30 דקות');
+    expect(b[3]).toContain('20 דקות');
+    expect(a[4]).toContain('קצין הקשר');
+    expect(b[4]).not.toContain('קצין הקשר');
+    expect(a[5]).toContain('סמל המחלקה');
+    expect(b[5]).toContain('מפקד הצוות');
+    expect(b[6]).toContain('מכשיר פרטי');
+    expect(a[6]).not.toContain('מכשיר פרטי');
+  });
+  it('the long task offers both documents, and the AI prompt asks for the differences', () => {
+    const t = race.find((x) => x.id === 'long')!;
+    expect(t.docIds).toEqual(['proc1', 'proc2']);
+    expect(t.prompt).toContain('הבדלים');
+  });
+  it('five cases, three options each, a reason is required, and the right answers are not all in one place', () => {
+    const q = step<{ data: { questions: { options: string[]; answer: number; rationale?: boolean }[] } }>(c9, 'cases').data.questions;
+    expect(q).toHaveLength(5);
+    for (const x of q) {
+      expect(x.options).toHaveLength(3);
+      expect(x.rationale).toBe(true);
+    }
+    expect(new Set(q.map((x) => x.answer)).size).toBeGreaterThanOrEqual(2);
+  });
+  it('the weights add up to 100 and the time itself is not scored', () => {
+    expect(c9.score!.parts.reduce((s, p) => s + p.weight, 0)).toBe(100);
+    expect(c9.score!.parts.map((p) => p.metric)).toEqual(['casesOk', 'raced']);
   });
 });
