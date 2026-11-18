@@ -8,6 +8,10 @@ const statuses = readdirSync('modules').map(
 );
 const READY = statuses.filter((x) => x === 'ready').length;
 const DRAFTS = statuses.filter((x) => x === 'draft').length;
+/** The first lesson still in draft, if any: its slug and the title of its second screen. */
+const draft = readdirSync('modules')
+  .map((d) => JSON.parse(readFileSync(`modules/${d}/content.json`, 'utf8')) as { status: string; slug: string; steps: { title: string }[] })
+  .find((c) => c.status === 'draft');
 
 test.describe('home and entry', () => {
   test('home lists ready and draft modules, RTL, watermark, no horizontal scroll', async ({ page }) => {
@@ -42,11 +46,12 @@ test.describe('home and entry', () => {
   });
 
   test('draft module shows its planned structure without tracking', async ({ page }) => {
+    test.skip(!draft, 'every lesson is ready: there is no draft to open');
     const events = await mockTracking(page);
-    await login(page, '/l12/');
+    await login(page, `/${draft!.slug}/`);
     await expect(page.getByText('הלומדה בבנייה')).toBeVisible();
     await page.getByRole('button', { name: 'הצג את המבנה' }).click();
-    await expect(page.getByRole('heading', { level: 2, name: 'ארבע הודעות פתיחה' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 2, name: draft!.steps[1]!.title })).toBeVisible();
     await expectWatermark(page);
     expect(events).toHaveLength(0);
   });

@@ -6,6 +6,8 @@ import l08 from '../../../modules/l08-connected-tools/content.json';
 import l09 from '../../../modules/l09-when-not/content.json';
 import l10 from '../../../modules/l10-spot-the-error/content.json';
 import l11 from '../../../modules/l11-red-team/content.json';
+import l12 from '../../../modules/l12-situation-room/content.json';
+import { scoreShift, type ShiftConfig, type ShiftData } from '../../../modules/l12-situation-room/src/score';
 import type { ModuleContent, OutputStep, PromptStep } from '../../schema/src/types';
 import { runAutoTest } from './auto';
 import { fillDates, nextWeekDates } from './dates';
@@ -484,5 +486,106 @@ describe('L11 red team', () => {
     expect(c11.score!.parts.reduce((s, p) => s + p.weight, 0)).toBe(100);
     expect(c11.score!.parts.map((p) => p.metric)).not.toContain('roundA');
     expect(c11.score!.parts.map((p) => p.metric)).not.toContain('roundB');
+  });
+});
+
+describe('L12 situation room', () => {
+  const c12 = l12 as unknown as Content;
+  const shift = c12.steps.find((s) => s.id === 'shift') as unknown as {
+    messages: { id: string; t: number; text: string; replaces?: string }[];
+    data: ShiftConfig;
+  };
+  const cfg = shift.data;
+  const finalSample = cfg.final.samples![0]!.text;
+  const interimSample = cfg.interim.samples![0]!.text;
+  const MIN = 60_000;
+  const base = 1_000_000_000_000;
+  const done = (over: Partial<ShiftData> = {}): ShiftData => ({
+    t0: base,
+    interimText: interimSample,
+    interimAt: base + 11 * MIN,
+    finalText: finalSample,
+    finalManual: { 'r-pat-man': true, 'r-numbers': true, 'r-owner': true },
+    finalAt: base + 19 * MIN,
+    ...over,
+  });
+  const frac = (d: ShiftData, key: string) => scoreShift(cfg, d).groups.find((g) => g.key === key)!.frac;
+
+  it('the facts log is the list of messages, word for word, in order', () => {
+    const docs = c12.docs!.facts!.paragraphs.map((p) => p.text);
+    expect(docs).toEqual(shift.messages.map((m) => m.text));
+  });
+  it('the timeline: opening, one every minute and a half, interim at 10, correction at 12, last mention at 14, deadline at 18', () => {
+    const at = (id: string) => shift.messages.find((m) => m.id === id)!.t;
+    expect(at('m4')).toBeLessThan(30);
+    expect([at('m5'), at('m6'), at('m7'), at('m8')]).toEqual([180, 270, 360, 450]);
+    expect(at('m9')).toBe(600);
+    expect(at('m10')).toBe(720);
+    expect(at('m11')).toBe(840);
+    expect(at('m12')).toBe(1080);
+    expect(shift.messages.map((m) => m.t)).toEqual([...shift.messages.map((m) => m.t)].sort((a, b) => a - b));
+  });
+  it('the correction replaces the 36, and the old number stays readable', () => {
+    const m10 = shift.messages.find((m) => m.id === 'm10')!;
+    expect(m10.replaces).toBe('m8');
+    expect(m10.text).toContain('38');
+    expect(shift.messages.find((m) => m.id === 'm8')!.text).toContain('36');
+  });
+  it('צוער ר׳ appears in four separate messages, from the first minute to minute 14', () => {
+    const hits = shift.messages.filter((m) => m.text.includes('צוער ר׳'));
+    expect(hits.map((m) => m.id)).toEqual(['m3', 'm5', 'm7', 'm11']);
+    expect(hits[0]!.t).toBeLessThan(30);
+    expect(hits[3]!.t).toBe(840);
+  });
+  it('the sample brief meets every automatic check of the final requirements', () => {
+    for (const r of cfg.final.requirements.filter((x) => x.test)) expect(runAutoTest(r.test!, finalSample).pass, r.id).toBe(true);
+  });
+  it('the sample brief has no wrong number: 36 never appears and every number is in the log', () => {
+    expect(finalSample).not.toMatch(/(^|\D)36(\D|$)/);
+    const known = JSON.stringify(c12.docs!.facts);
+    for (const n of finalSample.match(/\d+/g) ?? []) expect(known, n).toContain(n);
+  });
+  it('the interim sample is two lines and a third line breaks the limit', () => {
+    const lines = cfg.interim.requirements.find((r) => r.id === 'i-lines')!.test!;
+    expect(runAutoTest(lines, interimSample).pass).toBe(true);
+    expect(runAutoTest(lines, interimSample + '\nשורה שלישית').pass).toBe(false);
+  });
+  it('a submitted sample brief on time scores every component fully', () => {
+    const s = scoreShift(cfg, done());
+    expect(s.groups.map((g) => g.frac)).toEqual([1, 1, 1, 1]);
+    expect(s.interimFrac).toBe(1);
+    expect(s.onTime).toBe(true);
+    expect(s.finalMinutes).toBe(19);
+  });
+  it('nothing counts before the brief is submitted', () => {
+    const s = scoreShift(cfg, done({ finalAt: undefined, interimAt: undefined }));
+    expect(s.groups.map((g) => g.frac)).toEqual([0, 0, 0, 0]);
+    expect(s.interimFrac).toBe(0);
+    expect(s.onTime).toBe(false);
+  });
+  it('a brief that keeps 36 and drops the pattern loses those components', () => {
+    const text = 'המלצה: יוצאים. 36 לוחמים כשירים. לוודא קשר, אחראי: קצין הקשר.';
+    const d = done({ finalText: text, finalManual: { 'r-owner': true } });
+    expect(frac(d, 'decision')).toBe(1);
+    expect(frac(d, 'pattern')).toBe(0);
+    expect(frac(d, 'correction')).toBe(0);
+    expect(frac(d, 'verify')).toBe(1);
+  });
+  it('manual items count only when the cadet ticked them', () => {
+    expect(frac(done({ finalManual: {} }), 'pattern')).toBe(0.5);
+    expect(frac(done({ finalManual: {} }), 'correction')).toBe(0.5);
+    expect(frac(done({ finalManual: {} }), 'verify')).toBe(0.5);
+  });
+  it('late submissions lose only the time components', () => {
+    const s = scoreShift(cfg, done({ interimAt: base + 14 * MIN, finalAt: base + 21 * MIN }));
+    expect(s.interimOnTime).toBe(false);
+    expect(s.interimFrac).toBeCloseTo(2 / 3);
+    expect(s.onTime).toBe(false);
+    expect(s.groups.map((g) => g.frac)).toEqual([1, 1, 1, 1]);
+  });
+  it('the weights follow the spec: 20, 20, 20, 15, 15, 10', () => {
+    const w = Object.fromEntries(c12.score!.parts.map((p) => [p.metric, p.weight]));
+    expect(w).toEqual({ mDecision: 20, mPattern: 20, mCorrection: 20, mInterim: 15, mVerify: 15, mOnTime: 10 });
+    for (const g of cfg.groups) expect(g.weight, g.key).toBe(w[g.metric]);
   });
 });
