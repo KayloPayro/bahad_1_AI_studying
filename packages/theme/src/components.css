@@ -2081,3 +2081,28 @@ mark.num-derived {
     opacity: 0;
   }
 }
+
+/* Shared card for screens that send the cadet to an external AI tool. */
+.tool-guide {
+  margin: var(--sp-4) 0;
+}
+.tool-guide-steps {
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: 0 var(--sp-4);
+}
+.tool-guide-steps summary {
+  cursor: pointer;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  font-weight: 700;
+}
+.tool-guide-steps ol {
+  margin: 0 0 var(--sp-3);
+  padding-inline-start: var(--sp-5, 24px);
+}
+.tool-guide-steps li {
+  margin-bottom: var(--sp-1, 4px);
+}

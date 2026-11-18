@@ -10,11 +10,8 @@ test('L02 end to end: quick round, questions, what the tool did not ask, final c
   await expect(page.locator('.chat .bubble', { hasText: 'מפקד האוגדה' })).toBeVisible({ timeout: 10_000 });
   await next(page);
 
-  await expectStep(page, 'סבב מהיר: לו״ז במשפט אחד');
-  await page.getByRole('button', { name: 'טען הנחיה במשפט אחד' }).click();
-  await next(page);
-
-  await expectStep(page, 'הלו״ז מהסבב המהיר');
+  await expectStep(page, 'הניסיון הראשון: לו״ז במשפט אחד');
+  await expect(page.getByText('אבטחת מידע')).toBeVisible();
   await page.getByLabel('הדבק כאן את הלו״ז שקיבלת').fill('08:30 קבלת פנים\n09:00 מצגת');
   await next(page);
 
@@ -39,8 +36,8 @@ test('L02 end to end: quick round, questions, what the tool did not ask, final c
   for (const box of await page.getByLabel('הוספתי בעצמי').all()) await box.check();
   await next(page);
 
-  await expectStep(page, 'תדריך חוזר');
-  await page.getByLabel('שורה שלא תואמת את הכוונה שלך (אם יש)').fill('הכול תואם');
+  await expectStep(page, 'בדיקת הבנה לפני כתיבה (תדריך חוזר)');
+  await page.getByLabel('תיקון להעתקה לכלי (אם יש)').fill('הכול תואם');
   await next(page);
 
   await expectStep(page, 'בדיקה מול שמונת האילוצים');
@@ -53,8 +50,8 @@ test('L02 end to end: quick round, questions, what the tool did not ask, final c
   await expect(page.locator('.result-sum')).toContainText('8 מתוך 8');
   await next(page);
 
-  await expectStep(page, 'ההנחיה ההפוכה');
-  await page.getByLabel('ההנחיה שהכלי כתב').fill('הנחיה מלאה לביקור מפקד אוגדה: זמנים, אוכל, שער צפוני…');
+  await expectStep(page, 'הופכים את העבודה לתבנית');
+  await page.getByLabel('התבנית אחרי שעברת עליה').fill('הנחיה מלאה לביקור מפקד אוגדה: זמנים, אוכל, שער צפוני…');
   await page.getByRole('button', { name: 'שמור בספריית ההנחיות' }).click();
   await expect(page.getByRole('button', { name: 'נשמר. שמור שוב' })).toBeVisible();
   await next(page);
@@ -66,13 +63,13 @@ test('L02 end to end: quick round, questions, what the tool did not ask, final c
 
   await expectStep(page, 'בונוס לקצין מטה');
   await page.getByRole('button', { name: 'סיום הלומדה' }).click();
-  // 60·8/8 + 25·8/8 + 15·5/8 = 94.375 → 94
-  await expect(page.locator('.score-big .clock')).toHaveText('94%');
+  // 65·8/8 + 35·8/8 = 100
+  await expect(page.locator('.score-big .clock')).toHaveText('100%');
 
-  await expect.poll(() => events.some((e) => e.event === 'complete' && e.module === 'L02' && e.score === 94)).toBe(true);
+  await expect.poll(() => events.some((e) => e.event === 'complete' && e.module === 'L02' && e.score === 100)).toBe(true);
 
   // The saved prompt appears in the library on the home page.
   await page.getByRole('link', { name: 'לכל הלומדות' }).first().click();
   await expect(page.getByRole('heading', { name: 'ספריית ההנחיות שלי' })).toBeVisible();
-  await expect(page.locator('.mod', { hasText: 'שאל אותי לפני שאתה עובד' })).toContainText('הושלם · 94%');
+  await expect(page.locator('.mod', { hasText: 'שאל אותי לפני שאתה עובד' })).toContainText('הושלם · 100%');
 });

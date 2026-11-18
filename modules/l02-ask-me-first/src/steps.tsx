@@ -67,8 +67,8 @@ export function Summary({ step, metrics }: StepProps<CustomStep>) {
   const total = Number(step.data?.total ?? 8);
   const n = (k: string) => Math.max(0, Math.min(total, Number(metrics[k] ?? 0)));
   const rows = [
-    { label: 'הסבב המהיר', value: n('quickMet'), note: 'אילוצים שהלו״ז קיים' },
-    { label: 'סבב השאלות', value: n('askedCards'), note: 'אילוצים שהכלי קיבל דרך שאלות' },
+    { label: 'הסבב המהיר', value: n('quickMet'), note: 'אילוצים שהלו״ז מקיים' },
+    { label: 'סבב השאלות', value: n('askedCards'), note: 'פרטים שהכלי שאל עליהם' },
     { label: 'הגרסה הסופית', value: n('finalMet'), note: 'אילוצים שהלו״ז הסופי קיים' },
   ];
   const asked = n('askedCards');

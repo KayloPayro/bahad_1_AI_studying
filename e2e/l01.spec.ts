@@ -56,11 +56,13 @@ test('L01 end to end with the sample prompts and products', async ({ page }) => 
   await next(page);
 
   await expectStep(page, 'גרסה סופית ומפתח');
+  // The key cannot be opened before the cadet reports how many problems they found on their own.
+  await expect(page.getByRole('button', { name: 'הצג מפתח' })).toBeDisabled();
+  await page.getByLabel('כמה מהבעיות בגרסה של הסמ״פ מצאת בעצמך, לפני שראית את המפתח?').selectOption('8');
   await page.getByRole('button', { name: 'הצג מפתח' }).click();
-  const found = page.getByLabel('איתרתי או וידאתי מול המקור');
-  await expect(found).toHaveCount(8);
-  for (let i = 0; i < 8; i++) await found.nth(i).check();
-  await expect(page.locator('.score-line')).toContainText('איתרת 8 מתוך 8. רמה: מצוין.');
+  await expect(page.locator('.key-item')).toHaveCount(8);
+  await expect(page.getByLabel('דף ההחלטה הסופי שלך')).toHaveAttribute('readonly', '');
+  await expect(page.locator('.score-line')).toContainText('דיווחת שמצאת 8 מתוך 8 לפני המפתח. רמה: מצוין.');
   await next(page);
 
   await expectStep(page, 'בדיקת הגרסה הסופית');
@@ -71,7 +73,7 @@ test('L01 end to end with the sample prompts and products', async ({ page }) => 
   await expectWatermark(page);
   await page.getByRole('button', { name: 'סיום הלומדה' }).click();
 
-  // 25·6/6 + 15·0/6 + 40·8/8 + 20·3/3 = 85
+  // 25·6/6 + 15·0/6 + 50·8/8 + 10·3/3 = 85
   await expect(page.locator('.score-big .clock')).toHaveText('85%');
   await expect(page.locator('.score-level')).toHaveText('מצוין');
 

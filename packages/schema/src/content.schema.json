@@ -131,7 +131,10 @@
       },
       "additionalProperties": false,
       "allOf": [
-        { "if": { "properties": { "type": { "enum": ["rule", "firstLine"] } } }, "then": { "required": ["rule"] } },
+        {
+          "if": { "properties": { "type": { "enum": ["rule", "firstLine"] } } },
+          "then": { "required": ["rule"] }
+        },
         {
           "if": { "properties": { "type": { "enum": ["minCitations", "maxWords", "minWords"] } } },
           "then": { "required": ["n"] }
@@ -188,7 +191,11 @@
           "items": {
             "type": "object",
             "required": ["id", "topic", "text"],
-            "properties": { "id": { "type": "string" }, "topic": { "type": "string" }, "text": { "type": "string" } },
+            "properties": {
+              "id": { "type": "string" },
+              "topic": { "type": "string" },
+              "text": { "type": "string" }
+            },
             "additionalProperties": false
           }
         },
@@ -199,6 +206,8 @@
         "samples": { "type": "array", "items": { "$ref": "#/definitions/sample" } },
         "snippets": { "type": "array", "items": { "$ref": "#/definitions/sample" } },
         "askFirst": { "type": "boolean" },
+        "toolGuide": { "type": "boolean" },
+        "copyable": { "type": "boolean" },
         "placeholder": { "type": "string" },
         "numbersDoc": { "type": "string" },
         "count": { "type": "integer", "minimum": 1 },
@@ -241,15 +250,24 @@
       "allOf": [
         { "if": { "properties": { "type": { "const": "chat" } } }, "then": { "required": ["messages"] } },
         { "if": { "properties": { "type": { "const": "doc" } } }, "then": { "required": ["docId"] } },
-        { "if": { "properties": { "type": { "const": "cards" } } }, "then": { "required": ["cards", "mode"] } },
-        { "if": { "properties": { "type": { "const": "output" } } }, "then": { "required": ["requirements"] } },
+        {
+          "if": { "properties": { "type": { "const": "cards" } } },
+          "then": { "required": ["cards", "mode"] }
+        },
+        {
+          "if": { "properties": { "type": { "const": "output" } } },
+          "then": { "required": ["requirements"] }
+        },
         { "if": { "properties": { "type": { "const": "findings" } } }, "then": { "required": ["count"] } },
         {
           "if": { "properties": { "type": { "const": "checklist" } } },
           "then": { "required": ["items", "metric"] }
         },
         { "if": { "properties": { "type": { "const": "freetext" } } }, "then": { "required": ["label"] } },
-        { "if": { "properties": { "type": { "const": "key" } } }, "then": { "required": ["items", "metric"] } },
+        {
+          "if": { "properties": { "type": { "const": "key" } } },
+          "then": { "required": ["items", "metric"] }
+        },
         { "if": { "properties": { "type": { "const": "bonus" } } }, "then": { "required": ["lines"] } },
         { "if": { "properties": { "type": { "const": "custom" } } }, "then": { "required": ["name"] } }
       ]

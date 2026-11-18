@@ -105,7 +105,8 @@ export function PromptEditor({
         <div class="result" aria-live="polite">
           <CheckList items={ev} words={['מופיע', 'חסר']} />
           <p class="result-sum">
-            בהנחיה מופיעות <strong class="num">{met}</strong> מתוך <span class="num">{requirements.length}</span> הדרישות.
+            בהנחיה מופיעות <strong class="num">{met}</strong> מתוך{' '}
+            <span class="num">{requirements.length}</span> הדרישות.
           </p>
           <p class="note">הבדיקה לפי מילות מפתח בלבד. הנחיה יכולה לכלול את המילים ועדיין להיות לא ברורה.</p>
         </div>
@@ -114,7 +115,11 @@ export function PromptEditor({
       <div class="send">
         {attach && (
           <label class="inline-check">
-            <input type="checkbox" checked={withDoc} onChange={(e) => setWithDoc((e.currentTarget as HTMLInputElement).checked)} />
+            <input
+              type="checkbox"
+              checked={withDoc}
+              onChange={(e) => setWithDoc((e.currentTarget as HTMLInputElement).checked)}
+            />
             לצרף את {attach.label} בהעתקה
           </label>
         )}
@@ -231,13 +236,14 @@ export function OutputBox({
       </div>
       {checked && hasText && (
         <div class="result" aria-live="polite">
-          <CheckList
-            items={ev}
-            manual={manual}
-            onManual={onManual}
-          />
+          <CheckList items={ev} manual={manual} onManual={onManual} words={['נמצא סימן', 'לא נמצא סימן']} />
           <p class="result-sum">
-            התוצר עומד ב-<strong class="num">{met}</strong> מתוך <span class="num">{requirements.length}</span> הדרישות.
+            סומנו <strong class="num">{met}</strong> מתוך <span class="num">{requirements.length}</span>{' '}
+            הדרישות.
+          </p>
+          <p class="note">
+            הסימון האוטומטי מחפש מילים, שעות ומספרים. הוא לא מבטיח שהדרישה קוימה. קרא את התוצר ובדוק שהמשמעות
+            נכונה.
           </p>
         </div>
       )}

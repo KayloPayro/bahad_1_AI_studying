@@ -17,6 +17,7 @@ import {
   isInstructorUnlocked,
   MessageHistory,
   Paras,
+  ToolGuide,
   Rich,
   Sheet,
   ThemeToggle,
@@ -33,7 +34,15 @@ import type { MountOptions, StepComponent, StepContext } from './types';
 
 type Tracker = ReturnType<typeof createTracker>;
 
-export function ModuleApp({ content, plugins = {}, tracker }: { content: ModuleContent; plugins?: MountOptions['plugins']; tracker: Tracker }) {
+export function ModuleApp({
+  content,
+  plugins = {},
+  tracker,
+}: {
+  content: ModuleContent;
+  plugins?: MountOptions['plugins'];
+  tracker: Tracker;
+}) {
   const [identity, setIdentity] = useState<Identity | null>(null);
   const [instructor, setInstructor] = useState(false);
   const [gate, setGate] = useState(false);
@@ -68,7 +77,10 @@ export function ModuleApp({ content, plugins = {}, tracker }: { content: ModuleC
       <>
         <TopBar title={content.title} />
         <main id="main" class="page">
-          <EntryScreen context={`לומדה ${Number(content.id.slice(1))}: ${content.title}`} onReady={setIdentity} />
+          <EntryScreen
+            context={`לומדה ${Number(content.id.slice(1))}: ${content.title}`}
+            onReady={setIdentity}
+          />
         </main>
       </>,
     );
@@ -238,8 +250,21 @@ function Runner({
     <TopBar title={content.title}>
       {run.startedAt && view === 'steps' && <Clock remaining={remaining} />}
       {hasMessages && run.startedAt && (
-        <button type="button" class="btn-icon btn-badge" aria-label={`הודעות שהתקבלו: ${received.length}`} onClick={() => setHistory(true)}>
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+        <button
+          type="button"
+          class="btn-icon btn-badge"
+          aria-label={`הודעות שהתקבלו: ${received.length}`}
+          onClick={() => setHistory(true)}
+        >
+          <svg
+            width="22"
+            height="22"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            aria-hidden="true"
+          >
             <path d="M4 5h16v11H8l-4 4V5z" stroke-linejoin="round" />
           </svg>
           {received.length > 0 && <span class="badge num">{received.length}</span>}
@@ -250,7 +275,13 @@ function Runner({
 
   const footer = (
     <footer class="page-foot">
-      <button type="button" class={'switch' + (instructor ? ' is-on' : '')} role="switch" aria-checked={instructor} onClick={onToggleInstructor}>
+      <button
+        type="button"
+        class={'switch' + (instructor ? ' is-on' : '')}
+        role="switch"
+        aria-checked={instructor}
+        onClick={onToggleInstructor}
+      >
         <span class="switch-track" aria-hidden="true" />
         מצב מדריך
       </button>
@@ -267,7 +298,11 @@ function Runner({
         <MessageHistory messages={received} />
       </Sheet>
       {content.instructorScript && (
-        <Sheet open={script && instructor} onClose={() => setScript(false)} title={content.instructorScript.title}>
+        <Sheet
+          open={script && instructor}
+          onClose={() => setScript(false)}
+          title={content.instructorScript.title}
+        >
           <div class="table-wrap">
             <table class="table">
               <thead>
@@ -329,7 +364,11 @@ function Runner({
 
   const isLast = run.stepIndex === content.steps.length - 1;
   const Renderer: StepComponent | undefined =
-    step.type === 'custom' ? plugins[step.name] : step.type === 'intro' ? undefined : BUILTIN_STEPS[step.type];
+    step.type === 'custom'
+      ? plugins[step.name]
+      : step.type === 'intro'
+        ? undefined
+        : BUILTIN_STEPS[step.type];
 
   return (
     <>
@@ -352,7 +391,8 @@ function Runner({
           <article class="step" key={step.id} aria-labelledby={'h-' + step.id}>
             <header class="step-head">
               <p class="step-kicker">
-                {STAGE_LABELS[step.stage]} · שלב <span class="num">{run.stepIndex}</span> מתוך <span class="num">{total}</span>
+                {STAGE_LABELS[step.stage]} · שלב <span class="num">{run.stepIndex}</span> מתוך{' '}
+                <span class="num">{total}</span>
               </p>
               <div class="step-title-row">
                 <h2 id={'h-' + step.id} ref={headingRef} tabIndex={-1}>
@@ -362,6 +402,7 @@ function Runner({
               </div>
             </header>
             <Paras items={step.body} className="step-body" />
+            {step.toolGuide && <ToolGuide />}
             {step.messages && step.messages.length > 0 && (
               <ChatSimulator
                 key={step.id + '-chat'}
@@ -377,7 +418,10 @@ function Runner({
                 content={content}
                 data={run.data[step.id] ?? {}}
                 setData={(patch) =>
-                  setRun((r) => ({ ...r, data: { ...r.data, [step.id]: { ...(r.data[step.id] ?? {}), ...patch } } }))
+                  setRun((r) => ({
+                    ...r,
+                    data: { ...r.data, [step.id]: { ...(r.data[step.id] ?? {}), ...patch } },
+                  }))
                 }
                 metrics={run.metrics}
                 setMetric={(k, v) => setRun((r) => ({ ...r, metrics: { ...r.metrics, [k]: v } }))}
@@ -406,7 +450,11 @@ function Runner({
                 </button>
               )
             ) : (
-              <button type="button" class="btn btn-primary" onClick={() => goTo(run.stepIndex + 1, { complete: true })}>
+              <button
+                type="button"
+                class="btn btn-primary"
+                onClick={() => goTo(run.stepIndex + 1, { complete: true })}
+              >
                 המשך
               </button>
             )}
@@ -537,7 +585,11 @@ function InstructorBar({
       <span class="inst-label">מדריך</span>
       {hasChat && (
         <>
-          <button type="button" class="btn btn-small btn-secondary" onClick={() => setControls((c) => ({ ...c, paused: !c.paused }))}>
+          <button
+            type="button"
+            class="btn btn-small btn-secondary"
+            onClick={() => setControls((c) => ({ ...c, paused: !c.paused }))}
+          >
             {controls.paused ? 'המשך הודעות' : 'השהה הודעות'}
           </button>
           <span class="seg" role="group" aria-label="מהירות הודעות">
@@ -599,7 +651,8 @@ function Completion({
   headingRef: preact.RefObject<HTMLHeadingElement>;
 }) {
   const sc = computeScore(content.score, run.metrics);
-  const minutes = run.startedAt && run.completedAt ? Math.round((run.completedAt - run.startedAt) / 60000) : null;
+  const minutes =
+    run.startedAt && run.completedAt ? Math.round((run.completedAt - run.startedAt) / 60000) : null;
   return (
     <article class="done">
       <p class="intro-kicker">סיום לומדה {Number(content.id.slice(1))}</p>

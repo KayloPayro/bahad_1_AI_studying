@@ -34,6 +34,33 @@ export function Why({ text }: { text?: string }) {
   );
 }
 
+/**
+ * Shared card for every screen that sends the cadet out to an external AI tool: the security rule up front,
+ * then the same six hand-off steps each time, so no lesson has to explain them again.
+ */
+export function ToolGuide() {
+  return (
+    <section class="tool-guide" aria-label="עבודה עם כלי AI">
+      <p class="flag flag-warn" role="note">
+        <strong>אבטחת מידע:</strong> התרגיל מבוסס על חומר מדומה בלבד. אל תעתיק לכלי AI חיצוני מידע צבאי אמיתי,
+        מידע אישי או פרטי יחידה, אלא אם השימוש אושר לך במפורש.
+      </p>
+      <details class="tool-guide-steps">
+        <summary>איך עובדים עם כלי ה-AI (6 צעדים)</summary>
+        <ol>
+          <li>בחר כלי אחד: ChatGPT, Claude או Gemini. מספיק אחד.</li>
+          <li>פתח שיחה חדשה כשמתבקשים לעשות זאת.</li>
+          <li>העתק מהאתר את ההנחיה והדבק אותה בשיחה.</li>
+          <li>אם מתבקשים לצרף מסמך, העתק גם אותו והדבק.</li>
+          <li>שלח, והעתק את התשובה.</li>
+          <li>חזור לאתר והדבק אותה בשדה המתאים.</li>
+        </ol>
+        <p>התשובה של הכלי לא חייבת להיות זהה לדוגמה באתר. בדוק מה שקיבלת, לפי הדרישות ולפי המקור.</p>
+      </details>
+    </section>
+  );
+}
+
 export function InstructorNote({ text, children }: { text?: string; children?: ComponentChildren }) {
   const on = useInstructor();
   if (!on || (!text && !children)) return null;
@@ -46,7 +73,13 @@ export function InstructorNote({ text, children }: { text?: string; children?: C
   );
 }
 
-export function Chip({ children, tone }: { children: ComponentChildren; tone?: 'accent' | 'ok' | 'warn' | 'bad' }) {
+export function Chip({
+  children,
+  tone,
+}: {
+  children: ComponentChildren;
+  tone?: 'accent' | 'ok' | 'warn' | 'bad';
+}) {
   return <span class={'chip' + (tone ? ' chip-' + tone : '')}>{children}</span>;
 }
 

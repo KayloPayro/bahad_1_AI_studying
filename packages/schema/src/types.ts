@@ -97,6 +97,8 @@ interface StepBase {
   body?: string[];
   /** "Why this is right" — opens on tap. */
   why?: string;
+  /** Shows the shared "working with the AI tool" card (security note + the six hand-off steps). */
+  toolGuide?: boolean;
   /** Instructor-only note. */
   instructor?: string;
   /** Messages that arrive in the chat while this step is open. */
@@ -170,6 +172,8 @@ export interface FreeTextStep extends StepBase {
   rows?: number;
   placeholder?: string;
   snippets?: Sample[];
+  /** Adds a "copy" button for what the cadet wrote (e.g. a correction to paste back into the tool). */
+  copyable?: boolean;
   /** Saves the text into the per-cadet prompt library. */
   library?: boolean;
 }

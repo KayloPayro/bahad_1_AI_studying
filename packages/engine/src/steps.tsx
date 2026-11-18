@@ -19,6 +19,7 @@ import {
   PromptEditor,
   Rich,
   Snippet,
+  copyText,
   toast,
   useInstructor,
 } from '@lumda/ui';
@@ -76,7 +77,8 @@ function CardsView({ step, data, setData, setMetric }: StepProps<CardsStep>) {
       </div>
       {step.mode === 'flip' && (
         <p class="result-sum" aria-live="polite">
-          נחשפו <strong class="num">{flipped.length}</strong> מתוך <span class="num">{step.cards.length}</span> קלפים.
+          נחשפו <strong class="num">{flipped.length}</strong> מתוך{' '}
+          <span class="num">{step.cards.length}</span> קלפים.
         </p>
       )}
     </div>
@@ -136,7 +138,9 @@ function FindingsView({ step, data, setData, ctx }: StepProps<FindingsStep>) {
               </button>
             </div>
           )}
-          {numbers && step.numbersDoc && <NumberMarks index={ctx.numberIndex(step.numbersDoc)} text={step.product.text} />}
+          {numbers && step.numbersDoc && (
+            <NumberMarks index={ctx.numberIndex(step.numbersDoc)} text={step.product.text} />
+          )}
         </figure>
       )}
       {Array.from({ length: step.count }, (_, i) => (
@@ -150,7 +154,7 @@ function FindingsView({ step, data, setData, ctx }: StepProps<FindingsStep>) {
             rows={2}
             dir="auto"
             value={list[i] ?? ''}
-            placeholder="מה הבעיה, ובאיזו פסקה במקור"
+            placeholder="מה כתוב בתוצר, מה כתוב במקור, ובאיזו פסקה"
             onInput={(e) => {
               const next = [...list];
               next[i] = (e.currentTarget as HTMLTextAreaElement).value;
@@ -237,6 +241,20 @@ function FreeTextView({ step, content, data, setData, ctx }: StepProps<FreeTextS
           onInput={(e) => setData({ text: (e.currentTarget as HTMLTextAreaElement).value })}
         />
       </div>
+      {step.copyable && (
+        <div class="row">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            onClick={async () => {
+              if (!text.trim()) return toast('כתוב קודם את התיקון');
+              toast((await copyText(text)) ? 'הועתק' : 'לא הצלחתי להעתיק');
+            }}
+          >
+            העתק לכלי
+          </button>
+        </div>
+      )}
       {step.library && (
         <div class="row">
           <button
@@ -244,7 +262,11 @@ function FreeTextView({ step, content, data, setData, ctx }: StepProps<FreeTextS
             class="btn btn-primary"
             disabled={!text.trim()}
             onClick={() => {
-              addToLibrary(ctx.identity.pn, { module: content.id, title: `${content.title}: ${step.title}`, text });
+              addToLibrary(ctx.identity.pn, {
+                module: content.id,
+                title: `${content.title}: ${step.title}`,
+                text,
+              });
               setData({ saved: true });
               toast('נשמר בספריית ההנחיות שלך');
             }}
@@ -259,10 +281,12 @@ function FreeTextView({ step, content, data, setData, ctx }: StepProps<FreeTextS
 
 function KeyView({ step, data, setData, setMetric }: StepProps<KeyStep>) {
   const instructor = useInstructor();
-  const found = bools(data.found);
   const revealed = Boolean(data.revealed) || instructor;
   const id = useId();
-  const n = Object.values(found).filter(Boolean).length;
+  const declId = useId();
+  const total = step.items.length;
+  const declared = typeof data.declared === 'number' ? data.declared : undefined;
+  const n = declared ?? 0;
   const levels = step.levels ?? [];
   const level = levels.find((l) => n >= l.min)?.label;
   return (
@@ -277,14 +301,48 @@ function KeyView({ step, data, setData, setMetric }: StepProps<KeyStep>) {
             class="textarea"
             rows={step.final.rows ?? 7}
             dir="auto"
+            readOnly={Boolean(data.revealed)}
             value={str(data.final)}
             onInput={(e) => setData({ final: (e.currentTarget as HTMLTextAreaElement).value })}
           />
+          {Boolean(data.revealed) && <p class="note">הגרסה ננעלה כשהצגת את המפתח, כדי שההשוואה תהיה כנה.</p>}
+        </div>
+      )}
+      {!data.revealed && (
+        <div class="field">
+          <label class="field-label" for={declId}>
+            כמה מהבעיות בגרסה של הסמ״פ מצאת בעצמך, לפני שראית את המפתח?
+          </label>
+          <select
+            id={declId}
+            class="input"
+            value={declared === undefined ? '' : String(declared)}
+            onChange={(e) => {
+              const v = (e.currentTarget as HTMLSelectElement).value;
+              setData({ declared: v === '' ? undefined : Number(v) });
+            }}
+          >
+            <option value="">בחר מספר</option>
+            {Array.from({ length: total + 1 }, (_, i) => (
+              <option key={i} value={String(i)}>
+                {i}
+              </option>
+            ))}
+          </select>
+          <p class="note">את המספר אי אפשר לשנות אחרי שהמפתח נפתח. הוא קובע את הציון בחלק הזה.</p>
         </div>
       )}
       {!revealed && (
         <div class="row">
-          <button type="button" class="btn btn-primary" onClick={() => setData({ revealed: true })}>
+          <button
+            type="button"
+            class="btn btn-primary"
+            disabled={declared === undefined}
+            onClick={() => {
+              setData({ revealed: true });
+              setMetric(step.metric, declared ?? 0);
+            }}
+          >
             הצג מפתח
           </button>
         </div>
@@ -314,23 +372,11 @@ function KeyView({ step, data, setData, setMetric }: StepProps<KeyStep>) {
                   <dt>למה זה חשוב</dt>
                   <dd>{k.why}</dd>
                 </dl>
-                <label class="inline-check">
-                  <input
-                    type="checkbox"
-                    checked={Boolean(found[i])}
-                    onChange={(e) => {
-                      const next = { ...found, [i]: (e.currentTarget as HTMLInputElement).checked };
-                      setData({ found: next });
-                      setMetric(step.metric, Object.values(next).filter(Boolean).length);
-                    }}
-                  />
-                  איתרתי או וידאתי מול המקור
-                </label>
               </li>
             ))}
           </ol>
           <p class="score-line" aria-live="polite">
-            איתרת <strong class="num">{n}</strong> מתוך <span class="num">{step.items.length}</span>
+            דיווחת שמצאת <strong class="num">{n}</strong> מתוך <span class="num">{total}</span> לפני המפתח
             {level ? `. רמה: ${level}.` : '.'}
           </p>
           {step.example && (
