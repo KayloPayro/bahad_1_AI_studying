@@ -29,6 +29,7 @@ import {
 } from '@lumda/ui';
 import { computeScore } from './score';
 import { emptyRun, loadRun, resetRun, saveRun, type RunState } from './run';
+import { SHARED_STEPS } from './shared';
 import { BUILTIN_STEPS } from './steps';
 import type { MountOptions, StepComponent, StepContext } from './types';
 
@@ -365,7 +366,7 @@ function Runner({
   const isLast = run.stepIndex === content.steps.length - 1;
   const Renderer: StepComponent | undefined =
     step.type === 'custom'
-      ? plugins[step.name]
+      ? (plugins[step.name] ?? SHARED_STEPS[step.name])
       : step.type === 'intro'
         ? undefined
         : BUILTIN_STEPS[step.type];

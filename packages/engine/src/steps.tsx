@@ -116,6 +116,7 @@ function OutputView({ step, data, setData, setMetric, ctx }: StepProps<OutputSte
         onChange={(v) => setData({ text: v })}
         requirements={step.requirements}
         samples={step.samples}
+        label={step.label}
         numberIndex={step.numbersDoc ? ctx.numberIndex(step.numbersDoc) : undefined}
         manual={bools(data.manual)}
         onManual={(id, v) => setData({ manual: { ...bools(data.manual), [id]: v } })}
@@ -219,7 +220,7 @@ function TextView({ step }: StepProps<TextStep>) {
   return (
     <div class="snippets">
       {step.snippets?.map((s) => (
-        <Snippet key={s.label} s={s} />
+        <Snippet key={s.label} s={s} withTools={!step.sameChat} />
       ))}
     </div>
   );

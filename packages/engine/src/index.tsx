@@ -9,6 +9,7 @@ import type { MountOptions } from './types';
 
 export type { StepComponent, StepContext, StepProps, MountOptions } from './types';
 export { computeScore } from './score';
+export { SHARED_STEPS } from './shared';
 export { runStatus, runKey, type RunState, type RunStatus } from './run';
 export { getLibrary, addToLibrary, removeFromLibrary, type LibraryItem } from './library';
 

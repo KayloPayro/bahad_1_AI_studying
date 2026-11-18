@@ -151,6 +151,8 @@ export interface OutputStep extends StepBase {
   metric?: string;
   /** Prompt templates shown above the paste box (copy + open in tool). */
   snippets?: Sample[];
+  /** Label of the paste box. Default: what the tool returned. */
+  label?: string;
 }
 export interface FindingsStep extends StepBase {
   type: 'findings';
@@ -171,6 +173,8 @@ export interface ChecklistStep extends StepBase {
 export interface TextStep extends StepBase {
   type: 'text';
   snippets?: Sample[];
+  /** The snippets are sent into the conversation already open: copy only, no "open in tool" links. */
+  sameChat?: boolean;
 }
 export interface FreeTextStep extends StepBase {
   type: 'freetext';

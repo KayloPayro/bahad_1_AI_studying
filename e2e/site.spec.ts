@@ -1,13 +1,21 @@
+import { readdirSync, readFileSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
 import { expectNoHorizontalScroll, expectWatermark, login, mockTracking } from './helpers';
+
+/** Counts come from the content files, so finishing a lesson does not break this test. */
+const statuses = readdirSync('modules').map(
+  (d) => (JSON.parse(readFileSync(`modules/${d}/content.json`, 'utf8')) as { status: string }).status,
+);
+const READY = statuses.filter((x) => x === 'ready').length;
+const DRAFTS = statuses.filter((x) => x === 'draft').length;
 
 test.describe('home and entry', () => {
   test('home lists ready and draft modules, RTL, watermark, no horizontal scroll', async ({ page }) => {
     await page.goto('/');
     await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
     await expect(page.getByRole('heading', { level: 1, name: 'לומדות AI לצוערים' })).toBeVisible();
-    await expect(page.locator('#h-ready + .mod-list > li')).toHaveCount(4);
-    await expect(page.locator('#h-drafts ~ .mod-list > li')).toHaveCount(8);
+    await expect(page.locator('#h-ready + .mod-list > li')).toHaveCount(READY);
+    await expect(page.locator('#h-drafts ~ .mod-list > li')).toHaveCount(DRAFTS);
     await expectWatermark(page);
     await expectNoHorizontalScroll(page);
   });
@@ -35,10 +43,10 @@ test.describe('home and entry', () => {
 
   test('draft module shows its planned structure without tracking', async ({ page }) => {
     const events = await mockTracking(page);
-    await login(page, '/l05/');
+    await login(page, '/l12/');
     await expect(page.getByText('הלומדה בבנייה')).toBeVisible();
     await page.getByRole('button', { name: 'הצג את המבנה' }).click();
-    await expect(page.getByRole('heading', { level: 2, name: 'בלי מקורות' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 2, name: 'ארבע הודעות פתיחה' })).toBeVisible();
     await expectWatermark(page);
     expect(events).toHaveLength(0);
   });

@@ -15,8 +15,20 @@ export function Rich({ text }: { text: string }) {
   );
 }
 
+/** **bold** and [text](https://link). Only https links are turned into anchors. */
 function bold(s: string) {
-  return s.split(/\*\*(.+?)\*\*/g).map((p, i) => (i % 2 ? <strong key={i}>{p}</strong> : p));
+  return s.split(/(\*\*.+?\*\*|\[[^\]]+\]\(https:\/\/[^\s)]+\))/g).map((p, i) => {
+    if (i % 2 === 0) return p;
+    const link = /^\[([^\]]+)\]\((https:\/\/[^\s)]+)\)$/.exec(p);
+    if (link) {
+      return (
+        <a key={i} href={link[2]} target="_blank" rel="noopener noreferrer">
+          {link[1]}
+        </a>
+      );
+    }
+    return <strong key={i}>{p.slice(2, -2)}</strong>;
+  });
 }
 
 export function Paras({ items, className }: { items?: string[]; className?: string }) {
