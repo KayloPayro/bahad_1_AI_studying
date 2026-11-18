@@ -376,6 +376,8 @@ interface MarkSentence {
 interface MarkKeyItem {
   /** Sentence the error is in. */
   at: string;
+  /** Other sentences that show the same error (e.g. the second half of a contradiction): marking one of them also counts. */
+  alt?: string[];
   type: string;
   why: string;
 }
@@ -394,17 +396,26 @@ export function Mark({ step, content, data, setData, setMetric }: StepProps<Cust
   const marks = rec<string>(data.marks); // sentence id -> type id ('' = marked, type not chosen yet)
   const done = Boolean(data.done);
   const [open, setOpen] = useState<string>('');
-  const seeded = new Map(key.map((k) => [k.at, k]));
+  const seeded = new Map(key.flatMap((k) => [k.at, ...(k.alt ?? [])].map((id) => [id, k] as const)));
+  /** The sentence the cadet marked for this error: the main one, or one of its alternatives. */
+  const markedId = (k: MarkKeyItem) => [k.at, ...(k.alt ?? [])].find((id) => id in marks);
+  const tally = () => ({
+    caught: key.filter((k) => markedId(k) !== undefined).length,
+    typed: key.filter((k) => {
+      const m = markedId(k);
+      return m !== undefined && marks[m] === k.type;
+    }).length,
+    wrong: Object.keys(marks).filter((id) => !seeded.has(id)).length,
+  });
   const typeLabel = (id: string) => types.find((t) => t.id === id)?.label ?? 'לא נבחר סוג';
 
   const finish = () => {
-    const caught = key.filter((k) => k.at in marks).length;
-    const typed = key.filter((k) => marks[k.at] === k.type).length;
-    const wrong = Object.keys(marks).filter((id) => !seeded.has(id)).length;
+    const { caught, typed, wrong } = tally();
     setData({ done: true });
     setMetric('caught', caught);
     setMetric('typed', typed);
-    setMetric('clean', Math.max(0, key.length - wrong));
+    // Each mistaken mark costs two points of eight: one allowed mistake still passes, two do not.
+    setMetric('clean', Math.max(0, key.length - 2 * wrong));
     setOpen('');
   };
 
@@ -424,9 +435,7 @@ export function Mark({ step, content, data, setData, setMetric }: StepProps<Cust
     setOpen('');
   };
 
-  const caught = key.filter((k) => k.at in marks).length;
-  const typed = key.filter((k) => marks[k.at] === k.type).length;
-  const wrong = Object.keys(marks).filter((id) => !seeded.has(id)).length;
+  const { caught, typed, wrong } = tally();
   const doc = docId ? content.docs?.[docId] : undefined;
 
   return (
@@ -450,7 +459,8 @@ export function Mark({ step, content, data, setData, setMetric }: StepProps<Cust
               {p.sentences.map((s) => {
                 const marked = s.id in marks;
                 const k = seeded.get(s.id);
-                const state = !done ? '' : k ? (marked ? ' is-caught' : ' is-missed') : marked ? ' is-false' : '';
+                const viaOther = Boolean(k && !marked && markedId(k) !== undefined);
+                const state = !done ? '' : k ? (marked ? ' is-caught' : viaOther ? '' : ' is-missed') : marked ? ' is-false' : '';
                 return (
                   <span key={s.id} class="mark-wrap">
                     <button
@@ -464,7 +474,15 @@ export function Mark({ step, content, data, setData, setMetric }: StepProps<Cust
                     </button>
                     {done && (k || marked) && (
                       <span class="sentence-state">
-                        {k ? (marked ? (marks[s.id] === k.type ? ' (נתפס)' : ' (נתפס, סוג אחר)') : ' (פוספס)') : ' (סומן בטעות)'}
+                        {k
+                          ? marked
+                            ? marks[s.id] === k.type
+                              ? ' (נתפס)'
+                              : ' (נתפס, סוג אחר)'
+                            : viaOther
+                              ? ' (נספר כנתפס דרך המשפט האחר)'
+                              : ' (פוספס)'
+                          : ' (סומן בטעות)'}
                       </span>
                     )}{' '}
                   </span>
@@ -525,8 +543,10 @@ export function Mark({ step, content, data, setData, setMetric }: StepProps<Cust
           </p>
           <ol class="key-list">
             {key.map((k, i) => {
-              const s = paragraphs.flatMap((p) => p.sentences).find((x) => x.id === k.at);
-              const m = k.at in marks;
+              const all = paragraphs.flatMap((p) => p.sentences);
+              const shown = [k.at, ...(k.alt ?? [])].map((id) => all.find((x) => x.id === id)?.text).filter(Boolean);
+              const mid = markedId(k);
+              const m = mid !== undefined;
               return (
                 <li key={k.at} class="key-item">
                   <h4 class="key-title">
@@ -535,13 +555,13 @@ export function Mark({ step, content, data, setData, setMetric }: StepProps<Cust
                   </h4>
                   <dl class="key-dl">
                     <dt>במשפט</dt>
-                    <dd>{s?.text}</dd>
+                    <dd>{shown.join(' / ')}</dd>
                     <dt>למה זו טעות</dt>
                     <dd>{k.why}</dd>
                     {m && (
                       <>
                         <dt>הסוג שבחרת</dt>
-                        <dd>{typeLabel(marks[k.at] ?? '')}</dd>
+                        <dd>{typeLabel(marks[mid ?? ''] ?? '')}</dd>
                       </>
                     )}
                   </dl>

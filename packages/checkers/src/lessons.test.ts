@@ -4,6 +4,7 @@ import l06 from '../../../modules/l06-tasks-to-calendar/content.json';
 import l07 from '../../../modules/l07-workday/content.json';
 import l08 from '../../../modules/l08-connected-tools/content.json';
 import l09 from '../../../modules/l09-when-not/content.json';
+import l10 from '../../../modules/l10-spot-the-error/content.json';
 import type { ModuleContent, OutputStep, PromptStep } from '../../schema/src/types';
 import { runAutoTest } from './auto';
 import { fillDates, nextWeekDates } from './dates';
@@ -329,5 +330,88 @@ describe('L09 when not', () => {
   it('the weights add up to 100 and the time itself is not scored', () => {
     expect(c9.score!.parts.reduce((s, p) => s + p.weight, 0)).toBe(100);
     expect(c9.score!.parts.map((p) => p.metric)).toEqual(['casesOk', 'raced']);
+  });
+});
+
+describe('L10 spot the error', () => {
+  const c10 = l10 as unknown as Content;
+  const mark = step<{
+    data: {
+      types: { id: string }[];
+      paragraphs: { sentences: { id: string; text: string }[] }[];
+      key: { at: string; alt?: string[]; type: string }[];
+    };
+  }>(c10, 'mark').data;
+  const sentences = mark.paragraphs.flatMap((p) => p.sentences);
+  const text = (id: string) => sentences.find((s) => s.id === id)!.text;
+  const src = (i: number) => c10.docs!.sources!.paragraphs[i]!.text;
+  const day = (y: number, m: number, d: number) => new Date(y, m - 1, d).getDay(); // 0 = Sunday
+
+  it('has eight types and one seeded error of each, on distinct sentences that exist', () => {
+    expect(mark.types).toHaveLength(8);
+    expect(mark.key).toHaveLength(8);
+    expect(new Set(mark.key.map((k) => k.type)).size).toBe(8);
+    expect(new Set(mark.key.map((k) => k.at)).size).toBe(8);
+    for (const k of mark.key) {
+      expect(sentences.map((s) => s.id)).toContain(k.at);
+      for (const a of k.alt ?? []) expect(sentences.map((s) => s.id)).toContain(a);
+      expect(mark.types.map((t) => t.id)).toContain(k.type);
+    }
+  });
+  it('the other nine sentences are clean', () => {
+    const bad = new Set(mark.key.flatMap((k) => [k.at, ...(k.alt ?? [])]));
+    expect(sentences.filter((s) => !bad.has(s.id))).toHaveLength(sentences.length - 9);
+  });
+  it('the weekdays in the source are right, and the wrong date is really on another day', () => {
+    expect(day(2026, 3, 8)).toBe(0); // Sunday, start of the training week
+    expect(day(2026, 3, 12)).toBe(4); // Thursday, end of the week
+    expect(day(2026, 3, 10)).toBe(2); // Tuesday, the night navigation
+    expect(text('b4')).toContain('יום חמישי, 12.3');
+    expect(text('b2')).toContain('יום שלישי, 10.3');
+    expect(text('b3')).toContain('יום רביעי, 13.3');
+    expect(day(2026, 3, 13)).not.toBe(3); // 13.3 is not a Wednesday
+  });
+  it('the number error: the source says 42 and never 48', () => {
+    expect(src(0)).toContain('42 לוחמים');
+    expect(text('a2')).toContain('48');
+    expect(JSON.stringify(c10.docs!.sources)).not.toContain('48');
+  });
+  it('the arithmetic: three platoons times 1,400 is 4,200, not 4,500', () => {
+    expect(3 * 1400).toBe(4200);
+    expect(src(2)).toContain('4,200');
+    expect(text('c1')).toContain('4,200');
+    expect(text('c2')).toContain('4,500');
+  });
+  it('the quotation is not in the appendix: the source limit is 30 and there is no night rule', () => {
+    expect(src(1)).toContain('30 קמ״ש');
+    expect(src(1)).not.toContain('25');
+    expect(JSON.stringify(c10.docs!.sources)).not.toMatch(/בלילה|לא בלילה/);
+    expect(text('d2')).toContain('25 קמ״ש');
+  });
+  it('the role error: the name is right and the title is wrong', () => {
+    expect(src(3)).toContain('קצין הבטיחות של הפלוגה: סגן אורי כהן');
+    expect(src(3)).toContain('מפקד אימון הירי: סרן דנה לוי');
+    expect(text('d3')).toContain('מפקד אימון הירי, סגן אורי כהן');
+  });
+  it('the contradiction: the plan has a night navigation in the field and a base-only day on the same day', () => {
+    expect(text('b2')).toContain('יום שלישי');
+    expect(text('e1')).toContain('ביום שלישי');
+    const k = mark.key.find((x) => x.type === 't6')!;
+    expect([k.at, ...(k.alt ?? [])].sort()).toEqual(['b2', 'e1']);
+  });
+  it('the unsupported claim and the missing document are in no source', () => {
+    const all = JSON.stringify(c10.docs!.sources);
+    expect(all).not.toContain('יעילות');
+    expect(all).not.toContain('נוהל ירי לילה פלוגתי');
+    expect(c10.docs!.sources!.paragraphs).toHaveLength(5);
+  });
+  it('a pass needs six errors with the right type and at most one false mark: 75 is exactly that', () => {
+    const w = Object.fromEntries(c10.score!.parts.map((p) => [p.metric, p.weight]));
+    const pct = (caught: number, typed: number, wrong: number) =>
+      Math.round((caught / 8) * w.caught! + (typed / 8) * w.typed! + (Math.max(0, 8 - 2 * wrong) / 8) * w.clean!);
+    expect(pct(6, 6, 1)).toBeGreaterThanOrEqual(75);
+    expect(pct(5, 5, 0)).toBeLessThan(75);
+    expect(pct(6, 6, 2)).toBeLessThan(75);
+    expect(pct(8, 8, 0)).toBe(100);
   });
 });
