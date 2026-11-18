@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import l05 from '../../../modules/l05-unfamiliar-topic/content.json';
 import l06 from '../../../modules/l06-tasks-to-calendar/content.json';
 import l07 from '../../../modules/l07-workday/content.json';
+import l08 from '../../../modules/l08-connected-tools/content.json';
 import type { ModuleContent, OutputStep, PromptStep } from '../../schema/src/types';
 import { runAutoTest } from './auto';
 import { fillDates, nextWeekDates } from './dates';
@@ -202,5 +203,80 @@ describe('L07 workday', () => {
     const fin = out('final');
     const lines = fin.samples![0]!.text.split('\n');
     for (const i of items) expect(lines.some((l) => new RegExp(i.match, 'u').test(l)), i.match).toBe(true);
+  });
+});
+
+describe('relative-day tokens', () => {
+  it('fills {t-3} and {t+2} as ISO dates', () => {
+    expect(fillDates('{t-3},{t+2},{t+0}', new Date(2026, 10, 19))).toBe('2026-11-16,2026-11-21,2026-11-19');
+  });
+  it('crosses month and year ends', () => {
+    expect(fillDates('{t+4}', new Date(2026, 11, 29))).toBe('2027-01-02');
+    expect(fillDates('{t-1}', new Date(2026, 2, 1))).toBe('2026-02-28');
+  });
+});
+
+describe('L08 connected tools', () => {
+  const c8 = l08 as unknown as Content;
+  const csv = (c8.steps.find((s) => s.id === 'board-files') as unknown as { data: { files: { text: string }[] } }).data.files[0]!.text;
+  const rows = csv
+    .trim()
+    .split('\n')
+    .slice(1)
+    .map((l) => {
+      const [task, owner, due, status] = l.split(',') as [string, string, string, string];
+      return { task, owner, offset: Number(/\{t([+-]\d+)\}/.exec(due)![1]), status };
+    });
+  const pr = (id: string) => step<PromptStep>(c8, id);
+  const meets = (s: PromptStep, text: string) => s.requirements!.every((r) => runAutoTest(r.test!, text).pass);
+
+  it('the file has twelve tasks and the answers of the board check follow from it', () => {
+    expect(rows).toHaveLength(12);
+    const q = quizOf(c8, 'board-check');
+    const late = rows.filter((r) => r.offset < 0 && r.status !== 'בוצע');
+    const done = rows.filter((r) => r.status === 'בוצע');
+    const rasap = rows.filter((r) => r.owner === 'רס״פ');
+    expect(late).toHaveLength(3);
+    expect(done).toHaveLength(3);
+    expect(rasap).toHaveLength(2);
+    expect(accepts(q[0]!, '3')).toBe(true);
+    expect(accepts(q[0]!, '30')).toBe(false);
+    expect(accepts(q[1]!, '3 משימות')).toBe(true);
+    expect(accepts(q[2]!, '2')).toBe(true);
+    expect(accepts(q[2]!, '12')).toBe(false);
+  });
+  it('a finished task with a past date is not overdue, so the overdue count is not the count of past dates', () => {
+    expect(rows.filter((r) => r.offset < 0)).toHaveLength(6);
+  });
+  it('after moving the transport task, the Rasap owns one task, and the transport belongs to the platoon sergeant', () => {
+    const q = quizOf(c8, 'change-check');
+    const after = rows.map((r) => (r.task.startsWith('הסעות') ? { ...r, owner: 'סמל מחלקה 2' } : r));
+    expect(after.filter((r) => r.owner === 'רס״פ')).toHaveLength(1);
+    expect(accepts(q[0]!, 'סמל מחלקה 2')).toBe(true);
+    expect(accepts(q[0]!, 'רס״פ')).toBe(false);
+    expect(accepts(q[1]!, '1')).toBe(true);
+    expect(accepts(q[1]!, '2')).toBe(false);
+  });
+  it('the Canva link check accepts a Canva link only', () => {
+    const l = quizOf(c8, 'invite-link')[0]!;
+    expect(accepts(l, 'https://www.canva.com/design/DAF123/view')).toBe(true);
+    expect(accepts(l, 'https://evil.example/canva.com')).toBe(false);
+    expect(accepts(l, 'canva')).toBe(false);
+  });
+  it('every sample meets its automatic checks, and the correction to 18:00 is part of the invitation prompt', () => {
+    for (const id of ['invite', 'board', 'change']) expect(meets(pr(id), pr(id).samples![0]!.text), id).toBe(true);
+    const inv = pr('invite');
+    expect(inv.samples![0]!.text).toContain('18:00');
+    expect(inv.samples![0]!.text).not.toContain('17:00');
+    const when = inv.requirements!.find((r) => r.id === 'r-when')!.test!;
+    expect(runAutoTest(when, 'יום חמישי ב-17:00').pass).toBe(false);
+  });
+  it('the requirements in the chat are the six the prompt is checked on', () => {
+    const chat = (c8.steps.find((s) => s.id === 'invite') as unknown as { messages: { text: string }[] }).messages[0]!.text;
+    for (const part of ['יום חמישי', '17:00', 'אולם הפלוגה', 'שער 2', 'מדי א', 'הרס״פ', 'ירוק זית וזהב', 'בלי תמונות של חיילים'])
+      expect(chat, part).toContain(part);
+  });
+  it('the weights add up to 100', () => {
+    expect(c8.score!.parts.reduce((s, p) => s + p.weight, 0)).toBe(100);
   });
 });
