@@ -21,6 +21,8 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      - name: Install Linux native binaries (lockfile was made on Windows)
+        run: npm install --no-save --no-package-lock @rolldown/binding-linux-x64-gnu@1.2.19 lightningcss-linux-x64-gnu@1.33.0 @esbuild/linux-x64@0.28.2 @rollup/rollup-linux-x64-gnu@4.68.5
       - name: Typecheck
         run: npm run typecheck
       - name: Lint
