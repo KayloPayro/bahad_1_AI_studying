@@ -9,7 +9,6 @@ export interface ShiftConfig {
   /** The rubric components of the final brief: which requirement ids belong to which metric. */
   groups: { key: string; metric: string; label: string; weight: number; ids: string[] }[];
   interimMetric: string;
-  onTimeMetric: string;
 }
 
 /** What the shift step stores for this cadet. Times are epoch milliseconds. */
@@ -29,7 +28,7 @@ export interface ShiftScore {
   interimMet: number;
   interimTotal: number;
   interimOnTime: boolean;
-  /** 0 to 1: requirements met plus the on-time check, of all of them. Zero until submitted. */
+  /** 0 to 1: requirements met of all of them. Zero until submitted. The time is information only. */
   interimFrac: number;
   groups: { key: string; metric: string; label: string; weight: number; met: number; total: number; frac: number }[];
   finalDone: boolean;
@@ -53,7 +52,7 @@ export function scoreShift(cfg: ShiftConfig, d: ShiftData): ShiftScore {
   const interimMet = iev.filter((e) => e.auto?.pass).length;
   const interimOnTime = interimDone && (d.interimAt as number) - t0 <= cfg.interim.limitMin * 60_000;
   const interimTotal = iev.length;
-  const interimFrac = interimDone ? (interimMet + (interimOnTime ? 1 : 0)) / (interimTotal + 1) : 0;
+  const interimFrac = interimDone ? interimMet / interimTotal : 0;
 
   const fev = auto(cfg.final.requirements, d.finalText ?? '');
   const manual = d.finalManual ?? {};

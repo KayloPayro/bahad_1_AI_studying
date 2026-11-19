@@ -635,11 +635,15 @@ describe('L12 situation room', () => {
     expect(at('m12')).toBe(1080);
     expect(shift.messages.map((m) => m.t)).toEqual([...shift.messages.map((m) => m.t)].sort((a, b) => a - b));
   });
-  it('the correction replaces the 36, and the old number stays readable', () => {
+  it('the correction replaces the 36, and it crosses the threshold of 35: the old number says go, the new one does not', () => {
     const m10 = shift.messages.find((m) => m.id === 'm10')!;
     expect(m10.replaces).toBe('m8');
-    expect(m10.text).toContain('38');
+    expect(m10.text).toContain('34');
     expect(shift.messages.find((m) => m.id === 'm8')!.text).toContain('36');
+    const threshold = 35;
+    expect(36).toBeGreaterThanOrEqual(threshold);
+    expect(34).toBeLessThan(threshold);
+    expect(shift.messages.find((m) => m.id === 'm2')!.text).toContain('35 לוחמים כשירים');
   });
   it('צוער ר׳ appears in four separate messages, from the first minute to minute 14', () => {
     const hits = shift.messages.filter((m) => m.text.includes('צוער ר׳'));
@@ -655,10 +659,17 @@ describe('L12 situation room', () => {
     const known = JSON.stringify(c12.docs!.facts);
     for (const n of finalSample.match(/\d+/g) ?? []) expect(known, n).toContain(n);
   });
-  it('the interim sample is two lines and a third line breaks the limit', () => {
-    const lines = cfg.interim.requirements.find((r) => r.id === 'i-lines')!.test!;
-    expect(runAutoTest(lines, interimSample).pass).toBe(true);
-    expect(runAutoTest(lines, interimSample + '\nשורה שלישית').pass).toBe(false);
+  it('the interim update is limited to 40 words, not to lines', () => {
+    const limit = cfg.interim.requirements.find((r) => r.id === 'i-lines')!.test!;
+    expect(runAutoTest(limit, interimSample).pass).toBe(true);
+    expect(runAutoTest(limit, Array(41).fill('מילה').join(' ')).pass).toBe(false);
+  });
+  it('the sample brief recommends against leaving, and the brief that still says 36 does not carry the correction', () => {
+    expect(finalSample.split('\n')[0]).toContain('לא יוצאים');
+    const r34 = cfg.final.requirements.find((r) => r.id === 'r-34')!.test!;
+    expect(runAutoTest(r34, 'יוצאים כמתוכנן, 36 כשירים').pass).toBe(false);
+    const cond = cfg.final.requirements.find((r) => r.id === 'r-cond')!.test!;
+    expect(runAutoTest(cond, 'המלצה: יוצאים. 36 כשירים.').pass).toBe(false);
   });
   it('a submitted sample brief on time scores every component fully', () => {
     const s = scoreShift(cfg, done());
@@ -666,6 +677,10 @@ describe('L12 situation room', () => {
     expect(s.interimFrac).toBe(1);
     expect(s.onTime).toBe(true);
     expect(s.finalMinutes).toBe(19);
+  });
+  it('the clock is information only: no metric of the score depends on time', () => {
+    expect(c12.score!.parts.map((p) => p.metric)).not.toContain('mOnTime');
+    expect(Object.keys(cfg)).not.toContain('onTimeMetric');
   });
   it('nothing counts before the brief is submitted', () => {
     const s = scoreShift(cfg, done({ finalAt: undefined, interimAt: undefined }));
@@ -676,7 +691,7 @@ describe('L12 situation room', () => {
   it('a brief that keeps 36 and drops the pattern loses those components', () => {
     const text = 'המלצה: יוצאים. 36 לוחמים כשירים. לוודא קשר, אחראי: קצין הקשר.';
     const d = done({ finalText: text, finalManual: { 'r-owner': true } });
-    expect(frac(d, 'decision')).toBe(1);
+    expect(frac(d, 'decision')).toBe(0.5);
     expect(frac(d, 'pattern')).toBe(0);
     expect(frac(d, 'correction')).toBe(0);
     expect(frac(d, 'verify')).toBe(1);
@@ -686,16 +701,23 @@ describe('L12 situation room', () => {
     expect(frac(done({ finalManual: {} }), 'correction')).toBe(0.5);
     expect(frac(done({ finalManual: {} }), 'verify')).toBe(0.5);
   });
-  it('late submissions lose only the time components', () => {
+  it('late submissions lose nothing: the time is shown, not scored', () => {
     const s = scoreShift(cfg, done({ interimAt: base + 14 * MIN, finalAt: base + 21 * MIN }));
     expect(s.interimOnTime).toBe(false);
-    expect(s.interimFrac).toBeCloseTo(2 / 3);
+    expect(s.interimFrac).toBe(1);
     expect(s.onTime).toBe(false);
     expect(s.groups.map((g) => g.frac)).toEqual([1, 1, 1, 1]);
   });
-  it('the weights follow the spec: 20, 20, 20, 15, 15, 10', () => {
+  it('the weights: correction 30, pattern 25, recommendation 15, verification 15, interim 15', () => {
     const w = Object.fromEntries(c12.score!.parts.map((p) => [p.metric, p.weight]));
-    expect(w).toEqual({ mDecision: 20, mPattern: 20, mCorrection: 20, mInterim: 15, mVerify: 15, mOnTime: 10 });
+    expect(w).toEqual({ mCorrection: 30, mPattern: 25, mDecision: 15, mVerify: 15, mInterim: 15 });
     for (const g of cfg.groups) expect(g.weight, g.key).toBe(w[g.metric]);
+  });
+  it('missing the correction or missing the pattern fails the threshold of 80', () => {
+    const w = Object.fromEntries(c12.score!.parts.map((p) => [p.metric, p.weight]));
+    const pass = c12.score!.levels!.find((l) => l.label === 'עומד במדד')!.min;
+    const total = Object.values(w).reduce((a, b) => a + b, 0);
+    expect(total - w.mCorrection!).toBeLessThan(pass);
+    expect(total - w.mPattern!).toBeLessThan(pass);
   });
 });

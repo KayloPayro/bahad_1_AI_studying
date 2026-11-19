@@ -1,7 +1,7 @@
 import { useEffect, useId, useState } from 'preact/hooks';
 import type { CustomStep } from '@lumda/schema';
 import type { StepProps } from '@lumda/engine';
-import { CheckList, Matrix, NumberMarks, Snippet, toast, type MatrixRow } from '@lumda/ui';
+import { CheckList, copyText, Matrix, NumberMarks, Snippet, toast, type MatrixRow } from '@lumda/ui';
 import { auto, scoreShift, type ShiftConfig, type ShiftData } from './score';
 
 const mmss = (ms: number) => {
@@ -35,7 +35,6 @@ export function Shift(props: StepProps<CustomStep>) {
   // Hand the rubric to the score. Only changed values are written, so this settles after one render.
   const values: Record<string, number> = {
     [cfg.interimMetric]: sc.interimFrac,
-    [cfg.onTimeMetric]: sc.onTime ? 1 : 0,
     ...Object.fromEntries(sc.groups.map((g) => [g.metric, g.frac])),
   };
   const signature = JSON.stringify(values);
@@ -63,11 +62,26 @@ export function Shift(props: StepProps<CustomStep>) {
         <Snippet s={cfg.opening} />
       </details>
 
+      <div class="row">
+        <button
+          type="button"
+          class="btn btn-secondary"
+          onClick={async () => {
+            const arrived = (step.messages ?? []).filter((x) => x.t * 1000 <= (d.t0 ? now - d.t0 : 0));
+            if (!arrived.length) return toast('עוד לא הגיעו הודעות');
+            const text = arrived.map((x) => `[${x.time ?? ''}] ${x.from}: ${x.text}${x.replaces ? ' (מתקן את ההודעה הקודמת)' : ''}`).join('\n');
+            toast((await copyText(text)) ? `הועתקו ${arrived.length} הודעות` : 'לא הצלחתי להעתיק');
+          }}
+        >
+          העתק את כל ההודעות עד כה
+        </button>
+      </div>
+
       <section class="shift-part" aria-labelledby={`${base}-i`}>
         <h3 id={`${base}-i`} class="race-title">
           עדכון ביניים למ״פ
         </h3>
-        <p>כשהמ״פ מבקשת עדכון ביניים, כתוב אותו כאן (או הדבק את מה שהכלי ניסח) והגש. הוא בשתי שורות.</p>
+        <p>כשהמ״פ מבקשת עדכון ביניים, כתוב אותו כאן (או הדבק את מה שהכלי ניסח) והגש. הוא קצר, עד 40 מילים. הזמן מוצג כמידע ואינו בציון.</p>
         <div class="field">
           <label class="field-label" for={`${base}-it`}>
             העדכון שלך
@@ -129,7 +143,7 @@ export function Shift(props: StepProps<CustomStep>) {
           תדריך סופי למ״פ
         </h3>
         <p>
-          החלטה בשורה הראשונה, ההמלצה, מה שעלה מההודעות, ופעולות אימות עם אחראי לכל אחת. אחרי ההגשה התדריך ננעל.
+          המלצה בשורה הראשונה, מה שעלה מההודעות, ופעולות אימות עם אחראי לכל אחת. אחרי ההגשה התדריך ננעל.
         </p>
         <div class="field">
           <label class="field-label" for={`${base}-ft`}>
@@ -247,17 +261,17 @@ export function Review(props: StepProps<CustomStep>) {
     })),
     {
       id: 'interim',
-      label: '**עדכון ביניים:** שתי שורות, ובתוך הזמן',
+      label: '**עדכון ביניים:** עד 40 מילים, עם מצב והמלצה',
       note: `משקל בציון: ${props.content.score?.parts.find((p) => p.metric === cfg.interimMetric)?.weight ?? 0}%`,
-      cells: [cell('העדכון שלך', sc.interimMet + (sc.interimOnTime ? 1 : 0), sc.interimTotal + 1, sc.interimDone)],
+      cells: [cell('העדכון שלך', sc.interimMet, sc.interimTotal, sc.interimDone)],
     },
     {
       id: 'time',
-      label: `**זמן כולל:** התדריך הוגש בתוך ${cfg.final.limitMin} דקות`,
-      note: `משקל בציון: ${props.content.score?.parts.find((p) => p.metric === cfg.onTimeMetric)?.weight ?? 0}%`,
+      label: `**זמן כולל:** יעד ${cfg.final.limitMin} דקות`,
+      note: 'מידע בלבד, לא נכנס לציון',
       cells: [
         sc.finalDone
-          ? { head: 'ההגשה שלך', tone: sc.onTime ? 'ok' : 'bad', text: `${Math.round((sc.finalMinutes ?? 0) * 10) / 10} דקות` }
+          ? { head: 'ההגשה שלך', tone: 'na', text: `${Math.round((sc.finalMinutes ?? 0) * 10) / 10} דקות` }
           : { head: 'ההגשה שלך', tone: 'na', text: 'לא הוגש' },
       ],
     },
