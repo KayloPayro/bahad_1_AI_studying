@@ -184,14 +184,18 @@ interface RaceTask {
   title: string;
   /** What the task is. */
   text: string;
-  /** Docs shown as the material (manual) and attached to the prompt (AI). */
+  /** Docs shown as the material for the manual run (and for the AI run too, unless aiDocIds is set). */
   docIds?: string[];
+  /** Other docs for the AI run, so the two runs do not work on the same material and do not contaminate each other. */
+  aiDocIds?: string[];
   /** Prompt for the AI run; the docs are appended to it when copying. */
   prompt?: string;
   /** What the cadet reports at the end of each run. */
   report: { kind: 'text' | 'count'; label: string; max?: number };
   /** Shown after both runs. */
   key?: { text: string; items?: string[] };
+  /** Key for the AI run's documents, shown after the first key. */
+  aiKey?: { text: string; items?: string[] };
 }
 
 interface RunTimes {
@@ -235,7 +239,8 @@ export function Stopwatch({ step, content, data, setData, setMetric, ctx }: Step
     <div class="race">
       {tasks.map((t) => {
         const tm = times[t.id] ?? {};
-        const aiPrompt = [t.prompt, ...(t.docIds ?? []).map((d) => ctx.docText(d))].filter(Boolean).join('\n\n');
+        const aiDocs = t.aiDocIds ?? t.docIds ?? [];
+        const aiPrompt = [t.prompt, ...aiDocs.map((d) => ctx.docText(d))].filter(Boolean).join('\n\n');
         const sample: Sample = { label: 'ההנחיה לריצה עם AI', text: aiPrompt };
         return (
           <section key={t.id} class="race-task" aria-label={t.title}>
@@ -243,7 +248,7 @@ export function Stopwatch({ step, content, data, setData, setMetric, ctx }: Step
             <p>
               <Rich text={t.text} />
             </p>
-            {(t.docIds ?? []).map((d) => {
+            {[...(t.docIds ?? []), ...(t.aiDocIds ?? [])].map((d) => {
               const doc = content.docs?.[d];
               return doc ? (
                 <details key={d} class="race-doc">
@@ -334,20 +339,26 @@ export function Stopwatch({ step, content, data, setData, setMetric, ctx }: Step
                       ? 'בפעם הזו ידני היה מהיר יותר.'
                       : 'בפעם הזו הריצה עם AI הייתה מהירה יותר.'}
                 </p>
-                {t.key && (
+                {[t.key, t.aiKey].map((k, ki) =>
+                  k ? (
+                    <div key={ki}>
+                      <p>
+                        <strong>מה היה נכון:</strong> <Rich text={k.text} />
+                      </p>
+                      {k.items && (
+                        <ol class="list">
+                          {k.items.map((it, i) => (
+                            <li key={i}>
+                              <Rich text={it} />
+                            </li>
+                          ))}
+                        </ol>
+                      )}
+                    </div>
+                  ) : null,
+                )}
+                {(t.key || t.aiKey) && (
                   <>
-                    <p>
-                      <strong>מה היה נכון:</strong> <Rich text={t.key.text} />
-                    </p>
-                    {t.key.items && (
-                      <ol class="list">
-                        {t.key.items.map((it, i) => (
-                          <li key={i}>
-                            <Rich text={it} />
-                          </li>
-                        ))}
-                      </ol>
-                    )}
                     <p class="note">
                       מה שדיווחת, ידני: <bdi>{reports[`${t.id}:manual`] || 'לא דיווחת'}</bdi>. עם AI:{' '}
                       <bdi>{reports[`${t.id}:ai`] || 'לא דיווחת'}</bdi>.

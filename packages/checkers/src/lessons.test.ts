@@ -288,51 +288,87 @@ describe('L08 connected tools', () => {
 
 describe('L09 when not', () => {
   const c9 = l09 as unknown as Content;
-  const race = step<{ data: { tasks: { id: string; key?: { items: string[] }; docIds?: string[]; prompt?: string }[] } }>(c9, 'race').data.tasks;
+  type Task = { id: string; key?: { items: string[] }; aiKey?: { items: string[] }; docIds?: string[]; aiDocIds?: string[]; prompt?: string };
+  const race = step<{ data: { tasks: Task[] } }>(c9, 'race').data.tasks;
   const paras = (id: string) => c9.docs![id]!.paragraphs.map((p) => p.text);
+  const diffs = (x: string, y: string) =>
+    paras(x)
+      .map((t, i) => (t === paras(y)[i] ? -1 : i))
+      .filter((i) => i >= 0);
 
-  it('the two procedure versions differ in exactly six paragraphs, and the key lists six differences', () => {
-    const a = paras('proc1');
-    const b = paras('proc2');
-    expect(a).toHaveLength(8);
-    expect(b).toHaveLength(8);
-    const diff = a.map((t, i) => (t === b[i] ? -1 : i)).filter((i) => i >= 0);
-    expect(diff).toEqual([1, 2, 3, 4, 5, 6]);
-    expect(race.find((t) => t.id === 'long')!.key!.items).toHaveLength(6);
-  });
-  it('each key item names a fact that really is in the paragraph it is about', () => {
-    const a = paras('proc1');
-    const b = paras('proc2');
-    expect(a[1]).toContain('שלושה מכשירי קשר');
-    expect(b[1]).toContain('ארבעה מכשירי קשר');
-    expect(a[2]).toContain('06:00');
-    expect(b[2]).toContain('06:30');
-    expect(a[3]).toContain('30 דקות');
-    expect(b[3]).toContain('20 דקות');
-    expect(a[4]).toContain('קצין הקשר');
-    expect(b[4]).not.toContain('קצין הקשר');
-    expect(a[5]).toContain('סמל המחלקה');
-    expect(b[5]).toContain('מפקד הצוות');
-    expect(b[6]).toContain('מכשיר פרטי');
-    expect(a[6]).not.toContain('מכשיר פרטי');
-  });
-  it('the long task offers both documents, and the AI prompt asks for the differences', () => {
+  it('each pair has ten paragraphs and seven differences, and the key lists seven for each pair', () => {
+    for (const [x, y] of [
+      ['procA1', 'procA2'],
+      ['procB1', 'procB2'],
+    ] as const) {
+      expect(paras(x)).toHaveLength(10);
+      expect(paras(y)).toHaveLength(10);
+      expect(diffs(x, y)).toHaveLength(7);
+    }
     const t = race.find((x) => x.id === 'long')!;
-    expect(t.docIds).toEqual(['proc1', 'proc2']);
+    expect(t.key!.items).toHaveLength(7);
+    expect(t.aiKey!.items).toHaveLength(7);
+  });
+  it('the manual run and the AI run use different pairs, and the AI prompt asks for the differences', () => {
+    const t = race.find((x) => x.id === 'long')!;
+    expect(t.docIds).toEqual(['procA1', 'procA2']);
+    expect(t.aiDocIds).toEqual(['procB1', 'procB2']);
     expect(t.prompt).toContain('הבדלים');
   });
-  it('five cases, three options each, a reason is required, and the right answers are not all in one place', () => {
-    const q = step<{ data: { questions: { options: string[]; answer: number; rationale?: boolean }[] } }>(c9, 'cases').data.questions;
+  it('key facts are really in the paragraphs', () => {
+    const a1 = paras('procA1');
+    const a2 = paras('procA2');
+    expect(a1[1]).toContain('שלושה מכשירי קשר');
+    expect(a2[1]).toContain('ארבעה מכשירי קשר');
+    expect(a1[2]).toContain('06:00');
+    expect(a2[2]).toContain('06:30');
+    expect(a1[4]).toContain('קצין הקשר');
+    expect(a2[4]).not.toContain('קצין הקשר');
+    expect(a2[6]).toContain('מכשיר פרטי');
+    expect(a1[8]).toContain('עד 10 דקות');
+    expect(a2[8]).toContain('עד 15 דקות');
+    const b1 = paras('procB1');
+    const b2 = paras('procB2');
+    expect(b1[1]).toContain('חמישה רכבים');
+    expect(b2[1]).toContain('שישה רכבים');
+    expect(b1[2]).toContain('05:45');
+    expect(b2[2]).toContain('היציאה מהמגרש בשעה 05:30');
+    expect(b1[4]).toContain('40 קמ״ש בדרך עפר');
+    expect(b2[4]).toContain('30 קמ״ש בדרך עפר');
+    expect(b1[5]).toContain('רכב ליווי');
+    expect(b2[5]).not.toContain('רכב ליווי');
+    expect(b2[8]).toContain('רכב חילוץ');
+  });
+  it('the list from another tool: five lines are true, the sixth was invented (the clause is identical), two differences are missing', () => {
+    const q = step<{ data: { questions: { answer: number; options: string[] }[] } }>(c9, 'listcheck').data.questions;
+    expect(q).toHaveLength(7);
+    expect(q.slice(0, 5).every((x) => x.answer === 0)).toBe(true);
+    expect(q[5]!.answer).toBe(1);
+    expect(paras('procA1')[7]).toBe(paras('procA2')[7]);
+    expect(q[6]!.options[q[6]!.answer]).toContain('שני הבדלים');
+    // the differences the list leaves out are the ones in clauses 6 and 8
+    expect(diffs('procA1', 'procA2')).toEqual([1, 2, 3, 4, 5, 6, 8]);
+  });
+  it('five cases, three options each, a reason is required, the right answers are spread, and the personal-data case needs approval and removal of names', () => {
+    const q = step<{ data: { questions: { id: string; options: string[]; answer: number; rationale?: boolean; why: string }[] } }>(c9, 'cases').data.questions;
     expect(q).toHaveLength(5);
     for (const x of q) {
       expect(x.options).toHaveLength(3);
       expect(x.rationale).toBe(true);
     }
-    expect(new Set(q.map((x) => x.answer)).size).toBeGreaterThanOrEqual(2);
+    expect(new Set(q.map((x) => x.answer)).size).toBeGreaterThanOrEqual(3);
+    const c4 = q.find((x) => x.id === 'c4')!;
+    expect(c4.options[c4.answer]).toMatch(/אושר/);
+    expect(c4.options[c4.answer]).toMatch(/הסרת שמות/);
+    expect(c4.why).not.toMatch(/חוסך שעות/);
+  });
+  it('the questions before opening a tool start with approval', () => {
+    const t = step<{ body: string[] }>(c9, 'rule');
+    expect(t.body.join(' ')).toContain('1. **האם מותר להעביר את החומר לכלי חיצוני?**');
   });
   it('the weights add up to 100 and the time itself is not scored', () => {
     expect(c9.score!.parts.reduce((s, p) => s + p.weight, 0)).toBe(100);
-    expect(c9.score!.parts.map((p) => p.metric)).toEqual(['casesOk', 'raced']);
+    expect(c9.score!.parts.map((p) => p.metric)).toEqual(['casesOk', 'listOk', 'raced']);
   });
 });
 

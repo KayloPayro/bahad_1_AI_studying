@@ -2,12 +2,13 @@ import { expect, test, type Page } from '@playwright/test';
 import { expectNoHorizontalScroll, expectStep, login, mockTracking, next } from './helpers';
 
 const CASES: [string, string][] = [
-  ['הודעה של שתי שורות לסגל', 'בלי AI: כותבים ישר'],
-  ['שיחה אישית עם חייל שנמצא במצוקה', 'בלי AI בשיחה עצמה. מותר להתכונן מראש עם שאלות מנחות'],
-  ['ציטוט מדויק מפקודה', 'להעתיק מהמקור מילה במילה, ולבדוק מול המקור'],
-  ['ניתוח של 300 שורות נוכחות', 'עם AI, ובדיקה מדגמית של כמה שורות מול החישוב'],
-  ['טיוטה לנאום בטקס סיום', 'עם AI לטיוטה, והקול שלך בעריכה'],
+  ['סיכום של נוהל לא מסווג', 'מבקש סיכום מ-AI וקורא את הנוהל כדי לוודא שלא נפל משהו מהותי'],
+  ['חייל בצוות שלך נראה במצוקה', 'מנהל את השיחה בעצמי. אם אני רוצה להתכונן עם כלי AI, רק לפי נהלי היחידה, בלי שם החייל ובלי פרטים עליו'],
+  ['ציטוט מדויק של סעיף מפקודה', 'פותח את הפקודה, מעתיק את הסעיף מילה במילה ובודק מול המקור'],
+  ['קובץ נוכחות של 300 שורות', 'עם AI רק אם השימוש אושר, אחרי הסרת שמות ומספרים אישיים, ובודק את הדפוס עצמו מול הנתונים לפני שמעבירים למפקד'],
+  ['טיוטה לנאום בטקס סיום', 'מבקש טיוטה מ-AI, ועורך אותה עד שהיא נשמעת כמוני'],
 ];
+const LIST = [0, 0, 0, 0, 0, 1];
 
 async function toRace(page: Page) {
   await login(page, '/l09/');
@@ -39,19 +40,31 @@ test('L09 end to end: two timed tasks, five cases with reasons, score', async ({
   await long.getByRole('button', { name: 'התחל שעון, ידני' }).click();
   await long.getByRole('button', { name: 'עצור שעון, ידני' }).click();
   // The key stays closed until both runs are done.
-  await expect(long.getByText('יש 6 הבדלים')).toHaveCount(0);
+  await expect(long.getByText('7 הבדלים')).toHaveCount(0);
   await long.getByLabel('כמה הבדלים מצאת? (עם AI)').selectOption('6');
   await long.getByRole('button', { name: 'התחל שעון, עם AI' }).click();
   await long.getByRole('button', { name: 'עצור שעון, עם AI' }).click();
-  await expect(long.getByText('יש 6 הבדלים')).toBeVisible();
-  await expect(long.locator('li')).toHaveCount(6);
+  await expect(long.getByText('נוהל הקשר (הריצה הידנית): 7 הבדלים.')).toBeVisible();
+  await expect(long.getByText('נוהל השיירה (הריצה עם AI): 7 הבדלים.')).toBeVisible();
+  await expect(long.locator('li')).toHaveCount(14);
   await expect(long.locator('.note').last()).toContainText('ידני: 3');
   await expect(page.locator('.result-sum').last()).toContainText('2 מתוך 2');
   await expectNoHorizontalScroll(page);
 
-  // The AI prompt carries both documents.
+  // The AI run works on a different pair than the manual run, and the prompt carries that pair.
   await long.locator('details', { hasText: 'ההנחיה לריצה עם AI' }).locator('summary').click();
-  await expect(long.locator('.snippet-text')).toContainText('נוהל הפעלת קשר בתרגיל, גרסה 2');
+  await expect(long.locator('.snippet-text')).toContainText('נוהל תנועת שיירה בתרגיל, גרסה 2');
+  await expect(long.locator('.snippet-text')).not.toContainText('נוהל הפעלת קשר');
+  await next(page);
+
+  // A list made by another tool: one invented line, two differences missing.
+  await expectStep(page, 'בדיקת רשימה של כלי אחר');
+  await expect(page.getByRole('button', { name: 'בדוק תשובות' })).toBeDisabled();
+  const qs = page.locator('fieldset');
+  for (let i = 0; i < LIST.length; i++) await qs.nth(i).getByRole('radio').nth(LIST[i]!).check();
+  await qs.nth(6).getByRole('radio').first().check();
+  await page.getByRole('button', { name: 'בדוק תשובות' }).click();
+  await expect(page.locator('.result-sum')).toContainText('7 מתוך 7');
   await next(page);
 
   await expectStep(page, 'חמישה מקרים');
@@ -66,7 +79,8 @@ test('L09 end to end: two timed tasks, five cases with reasons, score', async ({
   await expectNoHorizontalScroll(page);
   await next(page);
 
-  await expectStep(page, 'ארבע שאלות לפני שפותחים כלי');
+  await expectStep(page, 'חמש שאלות לפני שפותחים כלי');
+  await expect(page.getByText('האם מותר להעביר את החומר לכלי חיצוני?')).toBeVisible();
   await next(page);
   await expectStep(page, 'בונוס לקצין מטה');
   await page.getByRole('button', { name: 'סיום הלומדה' }).click();
@@ -78,10 +92,11 @@ test('L09 the answers need a reason, and a different choice is explained', async
   await mockTracking(page);
   await toRace(page);
   await next(page);
+  await next(page);
   await expectStep(page, 'חמישה מקרים');
   for (const [q] of CASES) {
     const fs = page.locator('fieldset', { hasText: q });
-    await fs.getByLabel('עם AI: מבקשים נוסח ומעתיקים').or(fs.getByRole('radio').first()).first().check();
+    await fs.getByRole('radio').first().check();
   }
   // A reason is missing everywhere, so nothing can be checked yet.
   await expect(page.getByRole('button', { name: 'הצג תשובות מומלצות' })).toBeDisabled();
