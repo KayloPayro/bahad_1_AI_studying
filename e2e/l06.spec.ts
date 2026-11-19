@@ -9,7 +9,7 @@ async function toPrompt(page: Page) {
   await expect(page.locator('.chat .bubble', { hasText: 'סיור מפקדים בשטח' })).toBeVisible({ timeout: 25_000 });
   await next(page);
 
-  await expectStep(page, 'הכנה: יומן ״תרגיל AI״');
+  await expectStep(page, 'הכנה: חשבון ויומן ״תרגיל AI״');
   await expectNoHorizontalScroll(page);
   await next(page);
 
@@ -36,6 +36,10 @@ test('L06 end to end: calendar file, health check, approval prompt, follow-up, v
   await expect(page.locator('.quiz-result .status-ok')).toBeVisible();
   await next(page);
 
+  await expectStep(page, 'ניסיון ראשון: ישר ליומן');
+  await expect(page.getByText('אבטחת מידע').first()).toBeVisible();
+  await next(page);
+
   await expectStep(page, 'הנחיה עם אישור לפני פעולה');
   await expect(page.getByLabel('לצרף את סיכום הדיון בהעתקה')).toBeChecked();
   await page.getByRole('button', { name: 'טען הנחיה לדוגמה' }).click();
@@ -48,7 +52,7 @@ test('L06 end to end: calendar file, health check, approval prompt, follow-up, v
   await expect(page.getByRole('link', { name: /העתק ופתח/ })).toHaveCount(0);
   await page.getByRole('button', { name: 'טען הודעת המשך לדוגמה' }).click();
   await page.getByRole('button', { name: 'בדוק מה בהנחיה' }).click();
-  await expect(page.locator('.result-sum')).toContainText('3 מתוך 3');
+  await expect(page.locator('.result-sum')).toContainText('4 מתוך 4');
   await next(page);
 
   await expectStep(page, 'אישור ויצירה');
@@ -57,15 +61,24 @@ test('L06 end to end: calendar file, health check, approval prompt, follow-up, v
   await next(page);
 
   await expectStep(page, 'אימות ביומן עצמו');
-  await page.getByLabel('תשובה לשאלה 1').fill('בדיקת ציוד קשר');
-  await page.getByLabel('תשובה לשאלה 2').fill('יום חמישי, 08:00');
-  await page.getByLabel('תשובה לשאלה 3').fill('מסדר ציוד');
+  await page.getByLabel('תשובה לשאלה 1').fill('תדריך לצוותים, 11:00');
+  await page.getByLabel('תשובה לשאלה 2').fill('09:00');
+  await page.getByLabel('תשובה לשאלה 3').fill('13');
   await page.getByRole('button', { name: 'בדוק מול הנתונים' }).click();
   await expect(page.locator('.result-sum')).toContainText('3 מתוך 3');
   await expectNoHorizontalScroll(page);
   await next(page);
 
   await expectStep(page, 'מה ראית ביומן');
+  for (const box of await page.locator('.check.is-manual input').all()) await box.check();
+  await next(page);
+
+  await expectStep(page, 'שורה למפקד');
+  await page.getByRole('button', { name: 'הודעה לדוגמה למפקד' }).click();
+  await expect(page.locator('.result-sum')).toContainText('4 מתוך 4');
+  await next(page);
+
+  await expectStep(page, 'מנתקים ומוחקים');
   for (const box of await page.locator('.check.is-manual input').all()) await box.check();
   await next(page);
 
@@ -80,7 +93,7 @@ test('L06 the calendar file is for next week, has nine events, and the copy butt
   await login(page, '/l06/');
   await page.getByRole('button', { name: 'התחל' }).click();
   await next(page);
-  await expectStep(page, 'הכנה: יומן ״תרגיל AI״');
+  await expectStep(page, 'הכנה: חשבון ויומן ״תרגיל AI״');
   const link = page.locator('a[download="tirgul-ai.ics"]');
   await expect(link).toHaveCount(1);
   const text = await page.evaluate(async () => {

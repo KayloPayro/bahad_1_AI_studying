@@ -118,16 +118,48 @@ describe('L06 tasks to calendar', () => {
     expect(hits(task('4', 800, 900))).toEqual([]); // weapons check Thursday 08:00
     expect(hits(task('1', 1230, 1330))).toEqual([]); // feedback Monday 12:30
   });
-  it('the Tuesday 10:00 question has one right answer, the briefing alone is wrong', () => {
+  it('the verification asks only what the real calendar holds: the new briefing time, an end time the tool chose, and the total', () => {
     const q = quizOf(c6, 'verify');
-    expect(accepts(q[0]!, 'בדיקת ציוד קשר')).toBe(true);
-    expect(accepts(q[0]!, 'תדריך לצוותים ובדיקת ציוד קשר')).toBe(false);
-    expect(accepts(q[0]!, 'תדריך לצוותים')).toBe(false);
-    expect(accepts(q[1]!, 'חמישי 08:00')).toBe(true);
-    expect(accepts(q[1]!, 'יום חמישי בשעה 8:00')).toBe(true);
-    expect(accepts(q[1]!, 'חמישי 18:00')).toBe(false);
-    expect(accepts(q[2]!, 'מסדר ציוד')).toBe(true);
-    expect(accepts(q[2]!, 'ארוחת צוות')).toBe(false);
+    expect(q).toHaveLength(3);
+    expect(accepts(q[0]!, 'תדריך לצוותים 11:00')).toBe(true);
+    expect(accepts(q[0]!, 'תדריך לצוותים 10:00')).toBe(false);
+    expect(accepts(q[0]!, 'בדיקת ציוד קשר')).toBe(false);
+    expect(accepts(q[1]!, '09:00')).toBe(true);
+    expect(accepts(q[1]!, 'לא יודע')).toBe(false);
+    expect(accepts(q[2]!, '13')).toBe(true);
+    expect(accepts(q[2]!, '9')).toBe(false);
+    expect(accepts(q[2]!, '14')).toBe(false);
+    // none of the three is answered by the summary or the chat
+    const chat = JSON.stringify(c6.steps.find((x) => x.id === 'inbox'));
+    expect(chat).not.toMatch(/13 אירועים|בשעה 11:00/);
+  });
+  it('the thirteen is nine existing events plus the four clear tasks', () => {
+    expect(events).toHaveLength(9);
+    expect(9 + 4).toBe(13);
+  });
+  it('without opening the calendar a cadet cannot pass: everything else is worth at most 60', () => {
+    const parts = c6.score!.parts;
+    const w = Object.fromEntries(parts.map((p) => [p.metric, p.weight]));
+    expect(parts.reduce((x, p) => x + p.weight, 0)).toBe(100);
+    const pass = c6.score!.levels!.find((l) => l.label === 'עומד במדד')!.min;
+    expect(100 - w.verifyOk!).toBeLessThan(pass);
+  });
+  it('the dedicated-account warning and the disconnect step are there, and the intro does not call the separate calendar a protection', () => {
+    const t = JSON.stringify(c6.steps[0]);
+    expect(t).toContain('חשבון Google ייעודי');
+    expect(t).not.toContain('היומן האישי שלך לא נפגע');
+    expect(c6.steps.map((x) => x.id)).toContain('disconnect');
+  });
+  it('the chat gives the durations and the authority to move the briefing', () => {
+    const inbox = c6.steps.find((x) => x.id === 'inbox') as unknown as { messages: { text: string }[] };
+    const all = inbox.messages.map((m) => m.text).join(' ');
+    expect(all).toContain('כל אירוע נמשך שעה');
+    expect(all).toContain('את התדריך שלי מותר להזיז');
+  });
+  it('the message to the commander: the sample meets its checks and "done" alone does not', () => {
+    const r = step<OutputStep>(c6, 'report');
+    expect(r.requirements.every((x) => runAutoTest(x.test!, r.samples![0]!.text).pass)).toBe(true);
+    expect(r.requirements.filter((x) => runAutoTest(x.test!, 'סיימתי.').pass)).toHaveLength(0);
   });
   it('the health check accepts 2, and not 9 or 20', () => {
     const q = quizOf(c6, 'health')[0]!;
@@ -143,6 +175,7 @@ describe('L06 tasks to calendar', () => {
     expect(p.requirements!.every((r) => runAutoTest(r.test!, sample).pass)).toBe(true);
     expect(p.requirements!.filter((r) => runAutoTest(r.test!, 'הכנס את המשימות ליומן.').pass).length).toBeLessThanOrEqual(1);
     const f = step<PromptStep>(c6, 'follow');
+    expect(f.requirements).toHaveLength(4);
     expect(f.requirements!.every((r) => runAutoTest(r.test!, f.samples![0]!.text).pass)).toBe(true);
     expect(f.requirements!.filter((r) => runAutoTest(r.test!, 'תמשיך.').pass)).toHaveLength(0);
   });
