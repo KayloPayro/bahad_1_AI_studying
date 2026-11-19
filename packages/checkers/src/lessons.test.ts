@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import l00 from '../../../modules/l00-intro/content.json';
 import l05 from '../../../modules/l05-unfamiliar-topic/content.json';
-import l06 from '../../../modules/l06-tasks-to-calendar/content.json';
-import l07 from '../../../modules/l07-workday/content.json';
+import l07 from '../../../modules/l07-tasks-to-calendar/content.json';
+import l06 from '../../../modules/l06-workday/content.json';
 import l08 from '../../../modules/l08-connected-tools/content.json';
 import l09 from '../../../modules/l09-when-not/content.json';
 import l10 from '../../../modules/l10-spot-the-error/content.json';
@@ -14,7 +15,7 @@ import { fillDates, nextWeekDates } from './dates';
 
 type Content = ModuleContent;
 const c5 = l05 as unknown as Content;
-const c6 = l06 as unknown as Content;
+const c6 = l07 as unknown as Content;
 
 interface QuizData {
   questions: { id: string; accept?: string; answer?: number; options?: string[] }[];
@@ -114,7 +115,7 @@ describe('next-week dates for calendar files', () => {
   });
 });
 
-describe('L06 tasks to calendar', () => {
+describe('L07 tasks to calendar', () => {
   const ics = (c6.steps.find((s) => s.id === 'prep') as unknown as { data: { files: { text: string }[] } }).data.files[0]!.text;
   const events = ics.split('BEGIN:VEVENT').slice(1).map((e) => {
     const get = (k: string) => new RegExp(k + ':\\{d(\\d)\\}T(\\d{4})').exec(e)!;
@@ -206,8 +207,8 @@ describe('L06 tasks to calendar', () => {
   });
 });
 
-describe('L07 workday', () => {
-  const c7 = l07 as unknown as Content;
+describe('L06 workday', () => {
+  const c7 = l06 as unknown as Content;
   const out = (id: string) => step<OutputStep>(c7, id);
   const pr = (id: string) => step<PromptStep>(c7, id);
   const passes = (reqs: { test?: Parameters<typeof runAutoTest>[0] }[], text: string) =>
@@ -775,3 +776,32 @@ describe('L12 situation room', () => {
     expect(total - w.mPattern!).toBeLessThan(pass);
   });
 });
+
+describe('L00 intro', () => {
+  const quiz = quizOf(l00 as unknown as Content, 'check');
+  it('has five questions with one correct option each, at different positions', () => {
+    expect(quiz).toHaveLength(5);
+    const answers = quiz.map((q) => q.answer);
+    expect(answers.every((a) => typeof a === 'number' && a >= 0 && a < q0(quiz, 0).options!.length)).toBe(true);
+    expect(new Set(answers).size).toBeGreaterThan(1);
+  });
+  it('the score measures understanding only: four of five passes, three of five does not', () => {
+    const c = l00 as unknown as Content;
+    expect(c.score!.parts).toHaveLength(1);
+    expect(c.score!.parts[0]!.max).toBe(5);
+    const pass = c.score!.levels!.find((l) => l.label === 'עומד במדד')!.min;
+    expect((4 / 5) * 100).toBeGreaterThanOrEqual(pass);
+    expect((3 / 5) * 100).toBeLessThan(pass);
+  });
+  it('the intro carries the security note and defines the basic terms', () => {
+    const intro = (l00 as unknown as Content).steps[0]! as { body: string[] };
+    const text = intro.body.join(' ');
+    expect(text).toContain('אבטחת מידע');
+    for (const term of ['כלי AI', 'הנחיה', 'תוצר', 'שיחה חדשה', 'חשבון חינמי']) expect(text).toContain(term);
+  });
+  it('the steps that go to a tool show the shared tool guide', () => {
+    const c = l00 as unknown as Content;
+    for (const id of ['open', 'unknown']) expect((c.steps.find((s) => s.id === id) as { toolGuide?: boolean }).toolGuide).toBe(true);
+  });
+});
+const q0 = (qs: { options?: string[] }[], i: number) => qs[i]!;
