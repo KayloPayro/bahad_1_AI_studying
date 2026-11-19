@@ -45,6 +45,27 @@ describe('L05 unfamiliar topic', () => {
     expect(c5.docs!.sop!.sub).toContain('2.3.2026');
     expect(c5.docs!.probe!.sub).toContain('20.5.2026');
   });
+  it('the update names what did not change (the tower and the report), so the calibration contradiction stays open', () => {
+    const u = docText(c5, 'update');
+    expect(u).not.toContain('שאר שלבי ההפעלה');
+    expect(u).not.toContain('כיול');
+    expect(u).toContain('פריסת התורן והדיווח');
+  });
+  it('the application questions are not answered by the earlier feedback: a wrong answer to each is caught', () => {
+    const m = step<OutputStep>(c5, 'memory');
+    const get = (id: string) => m.requirements.find((r) => r.id === id)!.test!;
+    expect(runAutoTest(get('m-calib'), 'כן, אפשר לדלג בהפעלה חוזרת.').pass).toBe(false);
+    expect(runAutoTest(get('m-heat'), '35 דקות מספיקות.').pass).toBe(false);
+    expect(runAutoTest(get('m-night'), 'מותר להפעיל בלילה, אין בעיה.').pass).toBe(false);
+    expect(m.requirements).toHaveLength(3);
+  });
+  it('the page has no self declaration, and the threshold needs the application step', () => {
+    const p = step<OutputStep>(c5, 'page');
+    expect(p.requirements.every((r) => r.test)).toBe(true);
+    const w = Object.fromEntries(c5.score!.parts.map((x) => [x.metric, x.weight]));
+    const pass = c5.score!.levels!.find((l) => l.label === 'עומד במדד')!.min;
+    expect(w.srcOk! + w.pageMet!).toBeLessThan(pass);
+  });
   it('the sample learning page meets every automatic check', () => {
     const p = step<OutputStep>(c5, 'page');
     expect(autoIds(p, sample(p))).toEqual(autoAll(p));

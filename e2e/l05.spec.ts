@@ -61,7 +61,7 @@ test('L05 end to end: no sources, notebook, six sourced answers, learning page, 
   await expect(page.locator('.result-sum')).toContainText('8 מתוך 8');
   await next(page);
 
-  await expectStep(page, 'במילים שלך, בלי הכלי');
+  await expectStep(page, 'שלוש שאלות, בלי הכלי');
   await page.getByRole('button', { name: 'תשובות לדוגמה' }).click();
   await expect(page.locator('.result-sum')).toContainText('3 מתוך 3');
   await next(page);
