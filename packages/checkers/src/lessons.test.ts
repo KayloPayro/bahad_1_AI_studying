@@ -528,12 +528,13 @@ describe('L11 red team', () => {
   const met = (s: { requirements?: { test?: Parameters<typeof runAutoTest>[0] }[] }, text: string) =>
     s.requirements!.filter((r) => r.test && runAutoTest(r.test, text).pass).length;
 
-  it('the plan has the six weaknesses, each in its own paragraph', () => {
+  it('the plan still holds the weaknesses, but the rain plan has to be inferred', () => {
     expect(plan(2)).toContain('לא מוקצה קצין בטיחות');
     expect(plan(3)).toContain('משאית אחת');
     expect(plan(4)).toContain('מכשיר קשר אחד');
     expect(plan(5)).toContain('בלי זמן רזרבה');
-    expect(plan(6)).toContain('התוכנית אינה משתנה בגשם');
+    expect(plan(6)).toContain('ייתכן גשם');
+    expect(plan(6)).not.toContain('התוכנית אינה משתנה');
     expect(plan(7)).toContain('מפקד המחלקה מחליט בזמן אמת');
   });
   it('the schedule is consistent: 20:00 plus five hours is the 01:00 pickup', () => {
@@ -542,32 +543,37 @@ describe('L11 red team', () => {
     expect(plan(5)).toContain('01:00');
     expect((20 + 5) % 24).toBe(1);
   });
-  it('exactly two of the five claims rest on something the plan does not say, and the plan contradicts them', () => {
+  it('the claims: one partly right (a rule that is not in the plan), two right, one that the plan contradicts, one that cannot be settled from the plan', () => {
     expect(claims).toHaveLength(5);
-    const rejected = claims.filter((c) => c.answer === 1).map((c) => c.id);
-    expect(rejected).toEqual(['k3', 'k5']);
+    expect(claims.map((c) => c.answer)).toEqual([2, 0, 1, 0, 2]);
     expect(plan(1)).toContain('כל לוחם נושא פנס ראש');
-    expect(plan(0)).toContain('ביום חמישי');
-    expect(plan(0)).not.toContain('שישי');
     expect(claims.find((c) => c.id === 'k3')!.context).toContain('בלי פנסי ראש');
-    expect(claims.find((c) => c.id === 'k5')!.context).toContain('יום שישי');
+    // the capacity of the truck is in no source
+    expect(JSON.stringify(c11.docs)).not.toMatch(/מכילה|קיבולת|מושבים/);
+    // the rule in claim 1 is in no source
+    expect(JSON.stringify(c11.docs)).not.toContain('אסור לצאת בלי קצין בטיחות');
   });
   it('the accepted claims match what the plan says', () => {
-    expect(plan(2)).toContain('לא מוקצה קצין בטיחות');
     expect(plan(3)).toContain('ובמקביל תביא מזון');
     expect(plan(4)).not.toContain('גיבוי');
   });
-  it('every claim needs a reason, with two options, and both answers are used', () => {
+  it('every claim needs a reason, with three options, and the right answers are in different places', () => {
     for (const c of claims) {
-      expect(c.options).toHaveLength(2);
+      expect(c.options).toHaveLength(3);
       expect(c.rationale).toBe(true);
     }
-    expect(new Set(claims.map((c) => c.answer))).toEqual(new Set([0, 1]));
+    expect(new Set(claims.map((c) => c.answer))).toEqual(new Set([0, 1, 2]));
+  });
+  it('the intro does not give away the number of weaknesses or of wrong claims', () => {
+    const t = JSON.stringify(step(c11, 'card')) + JSON.stringify(step(c11, 'claims'));
+    expect(t).not.toMatch(/שש חולשות|שתיים מהן/);
   });
   it('the red-team prompt sample meets all four checks, a plain "what do you think" meets none', () => {
     const b1 = pr('round-b1');
     expect(met(b1, b1.samples![0]!.text)).toBe(4);
     expect(met(b1, 'מה דעתך על התוכנית?')).toBe(0);
+    // one role only does not count as two lenses
+    expect(runAutoTest(b1.requirements![0]!.test!, 'בדוק רק כקצין בטיחות').pass).toBe(false);
     const b2 = pr('round-b2');
     expect(met(b2, b2.samples![0]!.text)).toBe(2);
   });
@@ -576,17 +582,20 @@ describe('L11 red team', () => {
     expect(met(ch, ch.samples![0]!.text)).toBeGreaterThanOrEqual(3);
     expect(met(ch, 'אני אשפר את התוכנית ואעדכן את כולם.')).toBe(0);
   });
-  it('the checklists of both rounds use the same six weaknesses as the comparison', () => {
-    const ids = (id: string) => step<{ items: { id: string }[] }>(c11, id).items.map((i) => i.id);
-    const rows = step<{ data: { rows: { id: string }[] } }>(c11, 'compare').data.rows.map((r) => r.id);
-    expect(ids('check-a')).toEqual(rows);
-    expect(ids('check-b')).toEqual(rows);
-    expect(rows).toHaveLength(6);
+  it('round A shows no list of weaknesses, and round B lists the six plus an open one', () => {
+    expect(step<{ type: string }>(c11, 'check-a').type).toBe('freetext');
+    expect(step<{ items: { id: string }[] }>(c11, 'check-b').items).toHaveLength(7);
+    expect(c11.steps.map((x) => x.id)).not.toContain('compare');
   });
-  it('the weights add up to 100 and the number of weaknesses the tool found is not scored', () => {
+  it('the weights add up to 100, three right decisions are not enough to pass, and the number of weaknesses the tool found is not scored', () => {
+    const w = Object.fromEntries(c11.score!.parts.map((p) => [p.metric, p.weight]));
     expect(c11.score!.parts.reduce((s, p) => s + p.weight, 0)).toBe(100);
     expect(c11.score!.parts.map((p) => p.metric)).not.toContain('roundA');
     expect(c11.score!.parts.map((p) => p.metric)).not.toContain('roundB');
+    const pass = c11.score!.levels!.find((l) => l.label === 'עומד במדד')!.min;
+    const everythingElse = w.changesMet! + w.redP1! + w.redP2!;
+    expect((3 / 5) * w.claimsOk! + everythingElse).toBeLessThan(pass);
+    expect((4 / 5) * w.claimsOk! + everythingElse).toBeGreaterThanOrEqual(pass);
   });
 });
 
