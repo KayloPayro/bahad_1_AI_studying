@@ -190,9 +190,20 @@ describe('L07 workday', () => {
     expect(runAutoTest(byId('f-safety'), sample1).pass).toBe(false);
     expect(runAutoTest(byId('f-mg'), sample1).pass).toBe(false);
   });
-  it('the final sample meets all six automatic checks', () => {
+  it('the final sample meets all seven automatic checks', () => {
     const fin = out('final');
-    expect(passes(fin.requirements, fin.samples![0]!.text)).toBe(6);
+    expect(passes(fin.requirements, fin.samples![0]!.text)).toBe(7);
+    expect(fin.requirements).toHaveLength(8);
+  });
+  it('a plan that keeps the cancelled Rasap meeting is caught, and the braking task may be placed before 10:30 only', () => {
+    const fin = out('final');
+    const byId = (id: string) => fin.requirements.find((r) => r.id === id)!.test!;
+    expect(runAutoTest(byId('f-cancel'), '| 12:30 עד 13:15 | פגישה עם הרס״פ על לוגיסטיקה |').pass).toBe(false);
+    expect(runAutoTest(byId('f-cancel'), '12:30 עד 13:15 פגישת הרס״פ בוטלה, והזמן שוחרר.').pass).toBe(true);
+    expect(runAutoTest(byId('f-safety'), '| 09:00 עד 09:30 | בדיקת בלמים |').pass).toBe(true);
+    expect(runAutoTest(byId('f-safety'), '| 08:30 עד 09:00 | בדיקת בלמים |').pass).toBe(true);
+    expect(runAutoTest(byId('f-safety'), '| 18:30 עד 19:00 | בדיקת בלמים |').pass).toBe(false);
+    expect(runAutoTest(byId('f-safety'), '| 11:00 עד 11:30 | בדיקת בלמים |').pass).toBe(false);
   });
   it('a plan that moved a soldier conversation, or put the safety check first thing at 07:00, is caught', () => {
     const fin = out('final');
@@ -202,12 +213,27 @@ describe('L07 workday', () => {
     expect(runAutoTest(byId('f-quiet'), '| 07:00 עד 07:30 | בדיקת בלמים |').pass).toBe(false);
     expect(runAutoTest(byId('f-safety'), '| 07:00 עד 07:30 | בדיקת בלמים |').pass).toBe(false);
   });
-  it('the comparison items cover the same fixed times as the checks', () => {
-    const items = (step<{ data: { items: { time: string; fixed?: boolean; match: string }[] } }>(c7, 'compare').data.items);
-    expect(items.filter((i) => i.fixed)).toHaveLength(10);
-    const fin = out('final');
-    const lines = fin.samples![0]!.text.split('\n');
-    for (const i of items) expect(lines.some((l) => new RegExp(i.match, 'u').test(l)), i.match).toBe(true);
+  it('the plan from another tool has the four planted problems, with the answers in different places', () => {
+    const q = quizOf(c7, 'other');
+    expect(q).toHaveLength(4);
+    expect(new Set(q.map((x) => x.answer)).size).toBeGreaterThanOrEqual(3);
+    const right = (i: number) => q[i]!.options![q[i]!.answer!]!;
+    expect(right(0)).toContain('הרס״פ');
+    expect(right(1)).toContain('סגן המג״ד');
+    expect(right(2)).toContain('גלעד');
+    expect(right(3)).toContain('11:00 עד 11:30');
+    // the invented item is really absent from the source
+    expect(docText(c7, 'day')).not.toContain('סגן המג״ד');
+  });
+  it('the message to the commander: the sample meets its checks, a long message does not', () => {
+    const m = out('msg');
+    expect(passes(m.requirements, m.samples![0]!.text)).toBe(autos(m.requirements));
+    const byId = (id: string) => m.requirements.find((r) => r.id === id)!.test!;
+    expect(runAutoTest(byId('g-short'), 'א\nב\nג\nד').pass).toBe(false);
+    expect(runAutoTest(byId('g-short'), 'א\nב\nג').pass).toBe(true);
+  });
+  it('the weights add up to 100', () => {
+    expect(c7.score!.parts.reduce((x, p) => x + p.weight, 0)).toBe(100);
   });
 });
 

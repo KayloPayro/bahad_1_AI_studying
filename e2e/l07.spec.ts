@@ -21,6 +21,10 @@ async function toFinal(page: Page) {
   await expectNoHorizontalScroll(page);
   await next(page);
 
+  await expectStep(page, 'קוראים את התוכנית מול ההודעות');
+  await page.getByLabel('מה המ״פ ביקשה ואינו מופיע בתוכנית').fill('הכול מופיע');
+  await next(page);
+
   await expectStep(page, 'מה הכלי החזיר');
   await page.getByRole('button', { name: 'תוצר לדוגמה: תוכנית ראשונה' }).click();
   await expect(page.locator('.result-sum')).toContainText('4 מתוך 4');
@@ -45,41 +49,51 @@ async function toFinal(page: Page) {
   await expectStep(page, 'התוכנית הסופית');
 }
 
-test('L07 end to end: priorities, two updates in one conversation, final plan, comparison, score', async ({ page }) => {
+test('L07 end to end: priorities, two updates in one conversation, final plan, a plan from another tool, message upward, score', async ({ page }) => {
   const events = await mockTracking(page);
   await toFinal(page);
   await page.getByRole('button', { name: 'תוצר לדוגמה: תוכנית סופית' }).click();
   await page.locator('.check.is-manual input').check();
-  await expect(page.locator('.result-sum')).toContainText('7 מתוך 7');
+  await expect(page.locator('.result-sum')).toContainText('8 מתוך 8');
   await expectNoHorizontalScroll(page);
   await next(page);
 
-  await expectStep(page, 'השוואה להצעה אחת אפשרית');
-  await expect(page.locator('.matrix-row')).toHaveCount(15);
-  await expect(page.locator('.result-sum')).toContainText('10 מתוך 10');
-  await expect(page.locator('.result-sum')).toContainText('הוזזו: 0');
-  await expect(page.locator('.matrix-row', { hasText: 'שיחה אישית עם גלעד' }).locator('.status')).toHaveText(['נשאר במקומו']);
+  // A plan from another tool, with four planted problems.
+  await expectStep(page, 'תוכנית שהוכנה בכלי אחר');
+  await expect(page.getByRole('button', { name: 'בדוק תשובות' })).toBeDisabled();
+  const pick = async (q: string, opt: string) => page.locator('fieldset', { hasText: q }).getByLabel(opt, { exact: true }).check();
+  await pick('איזה פריט בתוכנית כבר בוטל', 'פגישה עם הרס״פ על לוגיסטיקה');
+  await pick('איזה פריט בתוכנית אינו מופיע', 'פגישה עם סגן המג״ד');
+  await pick('איזו שיחה אישית עם חייל חסרה', 'גלעד');
+  await pick('איזו התנגשות בתוכנית לא סומנה', 'ישיבת מפקדי המחלקות מול הדרכת הבטיחות, 11:00 עד 11:30');
+  await page.getByRole('button', { name: 'בדוק תשובות' }).click();
+  await expect(page.locator('.result-sum')).toContainText('4 מתוך 4');
+  await next(page);
+
+  // A message upward, with a decision to make.
+  await expectStep(page, 'הודעה למ״פ על ההתנגשות');
+  await expect(page.getByText('אבטחת מידע').first()).toBeVisible();
+  await page.getByRole('button', { name: 'הודעה לדוגמה' }).click();
+  await page.locator('.check.is-manual input').check();
+  await expect(page.locator('.result-sum')).toContainText('4 מתוך 4');
   await expectNoHorizontalScroll(page);
   await next(page);
 
-  await expectStep(page, 'בונוס לקצין מטה');
+  await expectStep(page, 'מה לקחת מכאן');
   await page.getByRole('button', { name: 'סיום הלומדה' }).click();
   await expect(page.locator('.score-big .clock')).toHaveText('100%');
   await expect.poll(() => events.some((e) => e.event === 'complete' && e.module === 'L07' && e.score === 100)).toBe(true);
 });
 
-test('L07 comparison marks a fixed item the plan moved', async ({ page }) => {
+test('L07 the final check catches a moved soldier conversation, a late braking task and a kept cancelled meeting', async ({ page }) => {
   await mockTracking(page);
   await toFinal(page);
   await page.getByLabel('התוכנית הסופית שקיבלת מהכלי').fill(
-    '| 07:00 עד 08:00 | שעה שקטה |\n| 08:00 עד 08:30 | בדיקת הבלמים |\n| 10:00 עד 10:30 | שיחה אישית עם גלעד |',
+    '| 07:00 עד 08:00 | שעה שקטה |\n| 11:00 עד 11:30 | בדיקת הבלמים |\n| 10:00 עד 10:30 | שיחה אישית עם גלעד |\n| 12:30 עד 13:15 | פגישה עם הרס״פ על לוגיסטיקה |',
   );
   await page.getByRole('button', { name: 'בדוק מול הדרישות' }).click();
-  await next(page);
-  await expectStep(page, 'השוואה להצעה אחת אפשרית');
-  const row = page.locator('.matrix-row', { hasText: 'שיחה אישית עם גלעד' });
-  await expect(row.locator('.status')).toHaveText(['הוזז ל-10:00']);
-  await expect(page.locator('.matrix-row', { hasText: 'שעה שקטה' }).locator('.status')).toHaveText(['נשאר במקומו']);
-  await expect(page.locator('.matrix-row', { hasText: 'תדריך בוקר' }).locator('.status')).toHaveText(['לא נמצא בתוכנית']);
-  await expect(page.locator('.result-sum')).toContainText('הוזזו: 1');
+  await expect(page.locator('.check', { hasText: 'שיחות החיילים' })).toHaveClass(/is-fail/);
+  await expect(page.locator('.check', { hasText: 'משימת הבלמים בבוקר' })).toHaveClass(/is-fail/);
+  await expect(page.locator('.check', { hasText: 'הפגישה שבוטלה' })).toHaveClass(/is-fail/);
+  await expect(page.locator('.check', { hasText: 'שעה שקטה' })).toHaveClass(/is-pass/);
 });
