@@ -195,7 +195,34 @@ describe('L04 rounds', () => {
   const autoPass = (s: OutputStep, text: string) =>
     s.requirements.filter((r) => r.test).map((r) => [r.id, runAutoTest(r.test!, text).pass] as const);
   const draft = (c4.steps.find((x) => x.id === 'setup') as { snippets: { text: string }[] }).snippets[0]!.text;
-  it('the draft is longer than the 220 word limit', () => expect(wordCount(draft)).toBeGreaterThan(220));
+  it('the draft is far longer than the 220 word limit, so shortening is a real task', () => {
+    expect(wordCount(draft)).toBeGreaterThan(320);
+    expect(wordCount(draft)).toBeGreaterThan(220 * 1.4);
+  });
+  it('the number 220 is in the commander message of round 1, so the cadet can know it', () => {
+    const m1 = step<{ messages: { text: string }[] }>(c4, 'r1-prompt').messages[0]!.text;
+    expect(m1).toContain('220');
+  });
+  it('the round 1 prompt sample does not let the tool drop sections silently: it asks to report what was removed', () => {
+    const p = step<PromptStep>(c4, 'r1-prompt');
+    const focused = p.samples!.find((x) => x.label.includes('ממוקדת'))!.text;
+    expect(focused).toContain('מה הורדת');
+    expect(focused).not.toContain('שמור על הסעיפים');
+    const r1 = out('r1-output');
+    expect(r1.requirements.find((r) => r.id === 'm-removed')).toBeTruthy();
+  });
+  it('the round 3 step does not dictate the removal from the table, and the report to the commander exists', () => {
+    const p = step<PromptStep>(c4, 'r3-prompt');
+    expect((p.body ?? []).join(' ')).not.toContain('כולל הטבלה');
+    expect((p.body ?? []).join(' ')).not.toContain('מעבירים למ״פ בנפרד');
+    const r = out('r3-report');
+    expect(r.requirements.every((x) => runAutoTest(x.test!, r.samples![0]!.text).pass)).toBe(true);
+  });
+  it('the final version alone, with no good follow-up prompts, is not enough to pass', () => {
+    const w = Object.fromEntries(c4.score!.parts.map((p) => [p.metric, p.weight]));
+    const pass = c4.score!.levels!.find((l) => l.label === 'עומד במדד')!.min;
+    expect(w.r3Met!).toBeLessThan(pass);
+  });
   it('each sample meets its own round, and what earlier rounds fixed', () => {
     for (const id of ['r1-output', 'r2-output', 'r3-output']) {
       const s = out(id);

@@ -17,7 +17,7 @@ async function round(page: Page, n: number, total: number) {
 
   await expectStep(page, `סבב ${n}: הגרסה החדשה`);
   await page.getByRole('button', { name: `תוצר לדוגמה: סבב ${n}` }).click();
-  await page.locator('.check.is-manual input').check();
+  for (const box of await page.locator('.check.is-manual input').all()) await box.check();
   await expect(page.locator('.result-sum')).toContainText(`${total} מתוך ${total}`);
   await expectNoHorizontalScroll(page);
 }
@@ -37,11 +37,17 @@ async function toRounds(page: Page) {
 test('L04 end to end: three follow-up rounds, progress table, score', async ({ page }) => {
   const events = await mockTracking(page);
   await toRounds(page);
-  await round(page, 1, 3);
+  await round(page, 1, 4);
   await next(page);
   await round(page, 2, 5);
   await next(page);
   await round(page, 3, 6);
+  await next(page);
+
+  // What was removed goes to the commander.
+  await expectStep(page, 'מודיעים למ״פ מה הוסר');
+  await page.getByRole('button', { name: 'הודעה לדוגמה למ״פ' }).click();
+  await expect(page.locator('.result-sum')).toContainText('3 מתוך 3');
   await next(page);
 
   await expectStep(page, 'מה נשמר בין הסבבים');
@@ -66,7 +72,7 @@ test('L04 end to end: three follow-up rounds, progress table, score', async ({ p
 test('L04 progress marks a fix that a later round broke', async ({ page }) => {
   await mockTracking(page);
   await toRounds(page);
-  await round(page, 1, 3);
+  await round(page, 1, 4);
   await next(page);
   await round(page, 2, 5);
   await next(page);
@@ -76,6 +82,7 @@ test('L04 progress marks a fix that a later round broke', async ({ page }) => {
   await expectStep(page, 'סבב 3: הגרסה החדשה');
   await page.getByLabel('התוצר שקיבלת מהכלי').fill('סיכום. אנו מצטערים.\n| משימה | פירוט |\n|---|---|\n| א | ב |');
   await page.getByRole('button', { name: 'בדוק מול הדרישות' }).click();
+  await next(page);
   await next(page);
 
   await expectStep(page, 'מה נשמר בין הסבבים');
