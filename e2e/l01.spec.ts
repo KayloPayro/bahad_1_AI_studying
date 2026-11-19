@@ -34,7 +34,7 @@ test('L01 end to end with the sample prompts and products', async ({ page }) => 
   await expectNoHorizontalScroll(page);
   await next(page);
 
-  await expectStep(page, 'הכלי שואל: ענה מהכרטיסים');
+  await expectStep(page, 'הכלי שואל: ענה מהקלפים');
   await page.getByRole('button', { name: /העדפת המ״פ/ }).click();
   await expect(page.getByText('המ״פ מעדיפה להזיז מקטעים ולא לבטל יציאה.')).toBeVisible();
   await expect(page.locator('.result-sum')).toContainText('1 מתוך 3');
