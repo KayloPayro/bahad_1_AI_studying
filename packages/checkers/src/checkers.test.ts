@@ -126,12 +126,49 @@ describe('L03 eight details of the commander message', () => {
   const strong = step<OutputStep>(c3, 'strong');
   const autos = s.requirements.filter((r) => r.test);
   const pass = (text: string) => autos.filter((r) => runAutoTest(r.test!, text).pass).length;
-  it('has six automatic and two manual checks, the same in both attempts', () => {
-    expect(autos).toHaveLength(6);
+  it('has eight automatic checks, none of them a self declaration, the same in both attempts', () => {
+    expect(autos).toHaveLength(8);
+    expect(s.requirements).toHaveLength(8);
     expect(s.requirements.map((r) => r.id)).toEqual(strong.requirements.map((r) => r.id));
   });
-  it('the one-sentence sample meets none of the automatic checks', () => expect(pass(sample(s, 0))).toBe(0));
-  it('the professional sample meets all six', () => expect(pass(sample(strong, 0))).toBe(6));
+  it('the short-prompt sample keeps the content but misses the sender, the tone and the length', () => {
+    const failed = autos.filter((r) => !runAutoTest(r.test!, sample(s, 0)).pass).map((r) => r.id);
+    expect(failed.sort()).toEqual(['d-lines', 'd-name', 'd-tone']);
+  });
+  it('the structured sample meets all eight, and contains no sentence the commander did not say', () => {
+    expect(pass(sample(strong, 0))).toBe(8);
+    expect(sample(strong, 0)).not.toContain('החלטה לא קלה');
+    expect(sample(strong, 0)).not.toContain('מודה לכם');
+  });
+  it('the sender check accepts a signature or "in the name of", and rejects a staff signature', () => {
+    const name = s.requirements.find((r) => r.id === 'd-name')!.test!;
+    expect(runAutoTest(name, 'שלום\nהמ״פ').pass).toBe(true);
+    expect(runAutoTest(name, 'שלום\nמפקדת הפלוגה').pass).toBe(true);
+    expect(runAutoTest(name, 'בשם המ״פ: היציאה מבוטלת').pass).toBe(true);
+    expect(runAutoTest(name, 'שלום\nהנהלת הפלוגה').pass).toBe(false);
+  });
+  it('the reason check rejects an invented reason', () => {
+    const reason = s.requirements.find((r) => r.id === 'd-reason')!.test!;
+    expect(runAutoTest(reason, 'היציאה בוטלה מסיבות מבצעיות.').pass).toBe(true);
+    expect(runAutoTest(reason, 'היציאה בוטלה עקב אילוצים מבצעיים בלתי צפויים.').pass).toBe(false);
+  });
+  it('the format instructions are in a separate text message, not in the transcript', () => {
+    const chat = (c3.steps.find((x) => x.id === 'voice') as { messages: { text: string }[] }).messages;
+    expect(chat[1]!.text).not.toMatch(/שש שורות|בשמי|התנצלות|תאריכים/);
+    expect(chat[2]!.text).toMatch(/שש שורות/);
+    expect(chat[2]!.text).toMatch(/בשמי/);
+    expect(chat[2]!.text).toMatch(/תאריכים/);
+    expect(chat[2]!.text).toMatch(/התנצלות/);
+  });
+  it('the weights make seven of eight details the floor for a pass', () => {
+    const w = Object.fromEntries(c3.score!.parts.map((p) => [p.metric, p.weight]));
+    const pass = c3.score!.levels!.find((l) => l.label === 'עומד במדד')!.min;
+    expect((6 / 8) * w.strongMet! + w.promptReqs!).toBeLessThan(pass);
+    expect((7 / 8) * w.strongMet! + w.promptReqs!).toBeGreaterThanOrEqual(pass);
+  });
+  it('the template step is gone and the bonus keeps the idea', () => {
+    expect(c3.steps.map((x) => x.id)).not.toContain('template');
+  });
   it('flags dates, apologies and a seventh line', () => {
     const byId = (id: string) => s.requirements.find((r) => r.id === id)!.test!;
     expect(runAutoTest(byId('d-dates'), 'יוצאים ב-14.5').pass).toBe(false);
@@ -149,6 +186,7 @@ describe('L03 eight details of the commander message', () => {
     const text = p.samples![0]!.text;
     expect(p.requirements!.every((r) => runAutoTest(r.test!, text).pass)).toBe(true);
     expect(p.requirements!.filter((r) => runAutoTest(r.test!, 'כתוב הודעה לחיילים על ביטול יציאה.').pass)).toHaveLength(1);
+    expect((p.body ?? []).join(' ')).toContain('לא נוסחה');
   });
 });
 
