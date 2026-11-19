@@ -230,28 +230,57 @@ describe('L08 connected tools', () => {
     .slice(1)
     .map((l) => {
       const [task, owner, due, status] = l.split(',') as [string, string, string, string];
-      return { task, owner, offset: Number(/\{t([+-]\d+)\}/.exec(due)![1]), status };
+      const m = /\{t([+-]\d+)\}/.exec(due);
+      return { task, owner, offset: m ? Number(m[1]) : null, status };
     });
   const pr = (id: string) => step<PromptStep>(c8, id);
   const meets = (s: PromptStep, text: string) => s.requirements!.every((r) => runAutoTest(r.test!, text).pass);
 
-  it('the file has twelve tasks and the answers of the board check follow from it', () => {
-    expect(rows).toHaveLength(12);
+  it('the file has thirteen tasks, one of them without a date, and the answers of the board check follow from it', () => {
+    expect(rows).toHaveLength(13);
     const q = quizOf(c8, 'board-check');
-    const late = rows.filter((r) => r.offset < 0 && r.status !== 'בוצע');
+    const late = rows.filter((r) => r.offset !== null && r.offset < 0 && r.status !== 'בוצע');
     const done = rows.filter((r) => r.status === 'בוצע');
     const rasap = rows.filter((r) => r.owner === 'רס״פ');
+    const noDate = rows.filter((r) => r.offset === null);
     expect(late).toHaveLength(3);
     expect(done).toHaveLength(3);
     expect(rasap).toHaveLength(2);
-    expect(accepts(q[0]!, '3')).toBe(true);
-    expect(accepts(q[0]!, '30')).toBe(false);
-    expect(accepts(q[1]!, '3 משימות')).toBe(true);
+    expect(noDate).toHaveLength(1);
+    expect(accepts(q[0]!, '13')).toBe(true);
+    expect(accepts(q[0]!, '12')).toBe(false);
+    expect(accepts(q[1]!, '3')).toBe(true);
+    expect(accepts(q[1]!, '30')).toBe(false);
     expect(accepts(q[2]!, '2')).toBe(true);
     expect(accepts(q[2]!, '12')).toBe(false);
+    expect(accepts(q[3]!, '1')).toBe(true);
+    expect(accepts(q[3]!, '0')).toBe(false);
+    expect(accepts(q[4]!, '23%')).toBe(true);
+    expect(accepts(q[4]!, '25%')).toBe(false);
   });
   it('a finished task with a past date is not overdue, so the overdue count is not the count of past dates', () => {
-    expect(rows.filter((r) => r.offset < 0)).toHaveLength(6);
+    expect(rows.filter((r) => r.offset !== null && r.offset < 0)).toHaveLength(6);
+  });
+  it('the three permission questions put the right answer in different places', () => {
+    const q = quizOf(c8, 'perms');
+    expect(new Set(q.map((x) => x.answer)).size).toBeGreaterThanOrEqual(2);
+  });
+  it('the connection step comes after the permission reading and before the typed screen', () => {
+    const ids = c8.steps.map((s) => s.id);
+    expect(ids.indexOf('perms')).toBeLessThan(ids.indexOf('connect'));
+    expect(ids.indexOf('connect')).toBeLessThan(ids.indexOf('permtext'));
+    expect(ids.indexOf('permtext')).toBeLessThan(ids.indexOf('invite'));
+  });
+  it('the correction to 18:00 is not announced in the invitation step', () => {
+    const inv = step<{ body: string[] }>(c8, 'invite');
+    expect(inv.body.join(' ')).not.toContain('מתקנת');
+  });
+  it('the design check accepts 18:00 and rejects 17:00', () => {
+    const q = quizOf(c8, 'invite-check');
+    expect(accepts(q[0]!, 'יום חמישי 18:00')).toBe(true);
+    expect(accepts(q[0]!, 'יום חמישי 17:00')).toBe(false);
+    expect(accepts(q[1]!, 'חסר')).toBe(true);
+    expect(accepts(q[2]!, 'הרס״פ 050-000-0000')).toBe(true);
   });
   it('after moving the transport task, the Rasap owns one task, and the transport belongs to the platoon sergeant', () => {
     const q = quizOf(c8, 'change-check');
