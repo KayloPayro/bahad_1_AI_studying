@@ -480,7 +480,17 @@ describe('L10 spot the error', () => {
     expect(src(1)).toContain('30 קמ״ש');
     expect(src(1)).not.toContain('25');
     expect(JSON.stringify(c10.docs!.sources)).not.toMatch(/בלילה|לא בלילה/);
-    expect(text('d2')).toContain('25 קמ״ש');
+    // the number in the quoted sentence is right: the invented night rule is the only error
+    expect(text('d2')).toContain('30 קמ״ש');
+    expect(text('d2')).toContain('וגם לא בלילה');
+  });
+  it('the source fixes the shooting day, so the date is the only error in the Wednesday sentence', () => {
+    expect(src(0)).toContain('אימון הירי השבועי יתקיים ביום רביעי');
+    expect(text('b3')).toContain('אימון ירי');
+  });
+  it('the approval sentence agrees with the source, so it is not a hidden error', () => {
+    expect(src(4)).toContain('באישור מפקד הגדוד שניתן ביום הקודם');
+    expect(text('b2')).toContain('באישור מפקד הגדוד שניתן ביום הקודם');
   });
   it('the role error: the name is right and the title is wrong', () => {
     expect(src(3)).toContain('קצין הבטיחות של הפלוגה: סגן אורי כהן');

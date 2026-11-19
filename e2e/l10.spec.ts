@@ -6,7 +6,7 @@ const ERRORS: [string, string][] = [
   ['בשבוע משתתפים 48 לוחמים', 'מספר שלא קיים במקור'],
   ['יום רביעי, 13.3', 'תאריך ויום לא תואמים'],
   ['בסך הכול יחולקו 4,500 כדורים', 'חישוב שגוי'],
-  ['אין לקיים אימון ירי כשהרוח עולה על 25 קמ״ש', 'ציטוט שלא קיים'],
+  ['אין לקיים אימון ירי כשהרוח עולה על 30 קמ״ש', 'ציטוט שלא קיים'],
   ['מפקד אימון הירי, סגן אורי כהן', 'תפקיד שגוי'],
   ['ביום שלישי הפלוגה נשארת כולה בבסיס', 'סתירה בין סעיפים'],
   ['הוכחו כיעילים בכל הפלוגות', 'הכללה בלי ביסוס'],
@@ -52,9 +52,19 @@ test('L10 end to end: eight errors found and typed, key, return for correction, 
   await expectNoHorizontalScroll(page);
   await next(page);
 
+  await expectStep(page, 'כותבים למי שהכין');
+  await page.getByLabel('ההודעה שלך למי שהכין את התוכנית').fill('1. משתתפים: כתוב 48, בנספח 42. לא סגור: התאריך של אימון הירי.');
+  await next(page);
+
   await expectStep(page, 'מה עושים עם מה שמצאת');
   await expect(page.getByRole('link', { name: /העתק ופתח/ })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'העתק', exact: true })).toBeVisible();
+  await next(page);
+
+  await expectStep(page, 'בודקים שוב אחרי התיקון');
+  await page.getByLabel('משפט 3', { exact: true }).check();
+  await page.getByRole('button', { name: 'בדוק', exact: true }).click();
+  await expect(page.locator('.result-sum')).toContainText('1 מתוך 1');
   await next(page);
 
   await expectStep(page, 'בונוס לקצין מטה');
@@ -92,8 +102,7 @@ test('L10 six right with at most one false mark passes at 75', async ({ page }) 
   for (const [part, type] of ERRORS.slice(0, 6)) await markSentence(page, part, type);
   await markSentence(page, 'התוכנית נשלחת לאישור', 'חישוב שגוי');
   await page.getByRole('button', { name: 'סיימתי, הצג מפתח' }).click();
-  await next(page);
-  await next(page);
+  for (let i = 0; i < 4; i++) await next(page);
   await page.getByRole('button', { name: 'סיום הלומדה' }).click();
   // 60·6/8 + 20·6/8 + 20·6/8 = 75
   await expect(page.locator('.score-big .clock')).toHaveText('75%');
