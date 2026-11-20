@@ -751,6 +751,13 @@ body {
   margin: 0;
   padding: 0 var(--sp-4) var(--sp-3);
 }
+.why-list {
+  margin: 0;
+  padding: 0 var(--sp-6) var(--sp-3) var(--sp-4);
+}
+.why-list li {
+  margin-bottom: var(--sp-1);
+}
 
 .inst-note {
   margin-top: var(--sp-3);

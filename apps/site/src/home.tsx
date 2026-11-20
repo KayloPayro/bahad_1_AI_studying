@@ -7,7 +7,7 @@ import { clearIdentity, getIdentity, maskPn, type Identity } from '@lumda/tracki
 import { applyTheme, Chip, copyText, ThemeToggle, toast, Toaster, Watermark } from '@lumda/ui';
 import { MODULES } from './modules';
 import { Logo } from './logo';
-import { PRINCIPLES } from './principles';
+import { PRINCIPLES, RISK_RULE } from './principles';
 
 function Home() {
   const [identity, setIdentity] = useState<Identity | null>(getIdentity);
@@ -93,19 +93,31 @@ function Home() {
           <h2 id="h-principles" class="section-h">
             עקרונות
           </h2>
-          <p class="muted">העקרונות של שימוש ב-AI על ידי קצין מטה. לחץ על עיקרון כדי לראות הרחבה ובאיזו לומדה לומדים אותו.</p>
-          {PRINCIPLES.map((p) => (
+          <p class="muted">העקרונות של שימוש ב-AI על ידי קצין מטה. לחץ על עיקרון כדי לראות הרחבה, מה עושים בפועל ובאיזו לומדה לומדים אותו.</p>
+          <p class="inst-note">{RISK_RULE}</p>
+          {PRINCIPLES.map((p, i) => (
             <details class="why" key={p.title}>
-              <summary>{p.title}</summary>
-              <p>{p.short}</p>
+              <summary>
+                <span class="clock">{i + 1}.</span> {p.title}
+              </summary>
+              <p class="muted">{p.group}</p>
               <p>{p.body}</p>
+              <p>
+                <strong>מה עושים בפועל</strong>
+              </p>
+              <ul class="why-list">
+                {p.action.map((a) => (
+                  <li key={a}>{a}</li>
+                ))}
+              </ul>
+              {p.note && <p class="muted">{p.note}</p>}
               <p class="muted">
                 לומדים ב:{' '}
-                {p.lessons.map((id, i) => {
+                {p.lessons.map((id, j) => {
                   const m = MODULES.find((x) => x.id === id);
                   return (
                     <span key={id}>
-                      {i > 0 && ', '}
+                      {j > 0 && ', '}
                       {m ? <a href={`${SITE_BASE}${m.slug}/`}>{m.title}</a> : id}
                     </span>
                   );
