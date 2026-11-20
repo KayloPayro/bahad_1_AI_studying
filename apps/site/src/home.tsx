@@ -7,6 +7,7 @@ import { clearIdentity, getIdentity, maskPn, type Identity } from '@lumda/tracki
 import { applyTheme, Chip, copyText, ThemeToggle, toast, Toaster, Watermark } from '@lumda/ui';
 import { MODULES } from './modules';
 import { Logo } from './logo';
+import { PRINCIPLES } from './principles';
 
 function Home() {
   const [identity, setIdentity] = useState<Identity | null>(getIdentity);
@@ -86,6 +87,32 @@ function Home() {
               );
             })}
           </ul>
+        </section>
+
+        <section aria-labelledby="h-principles">
+          <h2 id="h-principles" class="section-h">
+            עקרונות
+          </h2>
+          <p class="muted">העקרונות של שימוש ב-AI על ידי קצין מטה. לחץ על עיקרון כדי לראות הרחבה ובאיזו לומדה לומדים אותו.</p>
+          {PRINCIPLES.map((p) => (
+            <details class="why" key={p.title}>
+              <summary>{p.title}</summary>
+              <p>{p.short}</p>
+              <p>{p.body}</p>
+              <p class="muted">
+                לומדים ב:{' '}
+                {p.lessons.map((id, i) => {
+                  const m = MODULES.find((x) => x.id === id);
+                  return (
+                    <span key={id}>
+                      {i > 0 && ', '}
+                      {m ? <a href={`${SITE_BASE}${m.slug}/`}>{m.title}</a> : id}
+                    </span>
+                  );
+                })}
+              </p>
+            </details>
+          ))}
         </section>
 
         <section aria-labelledby="h-drafts">
