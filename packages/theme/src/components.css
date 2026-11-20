@@ -720,32 +720,50 @@ body {
   background: var(--bg);
 }
 .why summary {
-  cursor: pointer;
-  list-style: none;
   min-height: 44px;
-  display: flex;
-  align-items: center;
-  gap: var(--sp-2);
   padding: 0 var(--sp-4);
   font-weight: 800;
   color: var(--ink);
 }
-.why summary::-webkit-details-marker {
+/* One arrow for every dropdown. Closed: points left (RTL, toward the start). Open: points down.
+   Physical borders on purpose: logical ones are broken by the build (DESIGN.md section 7). */
+.why summary,
+.tool-guide-steps summary,
+.race-doc summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+.why summary::-webkit-details-marker,
+.tool-guide-steps summary::-webkit-details-marker,
+.race-doc summary::-webkit-details-marker {
   display: none;
 }
-.why summary::before {
+.why summary::before,
+.tool-guide-steps summary::before,
+.race-doc summary::before {
   content: '';
+  flex: none;
   width: 8px;
   height: 8px;
-  border-inline-end: 2px solid var(--red);
+  border-right: 2px solid var(--red);
   border-bottom: 2px solid var(--red);
-  transform: rotate(45deg);
+  transform: rotate(135deg);
   transition: transform var(--dur-fast) var(--ease-out);
-  margin-top: -4px;
 }
-.why[open] summary::before {
-  transform: rotate(225deg);
-  margin-top: 4px;
+.why[open] > summary::before,
+.tool-guide-steps[open] > summary::before,
+.race-doc[open] > summary::before {
+  transform: rotate(45deg);
+}
+@media (prefers-reduced-motion: reduce) {
+  .why summary::before,
+  .tool-guide-steps summary::before,
+  .race-doc summary::before {
+    transition: none;
+  }
 }
 .why p {
   margin: 0;

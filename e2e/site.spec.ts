@@ -34,6 +34,19 @@ test.describe('home and entry', () => {
     await expectNoHorizontalScroll(page);
   });
 
+  test('dropdown arrow points left when closed and turns 90 degrees to point down when open', async ({ page }) => {
+    await page.goto('/');
+    const d = page.locator('#h-principles ~ details.why').first();
+    const rot = () =>
+      d.locator('summary').evaluate((el) => {
+        const m = new DOMMatrix(getComputedStyle(el, '::before').transform);
+        return Math.round((Math.atan2(m.b, m.a) * 180) / Math.PI);
+      });
+    expect(await rot()).toBe(135);
+    await d.locator('summary').click();
+    await expect.poll(rot).toBe(45);
+  });
+
   test('personal number: validation, remembered device, "לא אני"', async ({ page }) => {
     await mockTracking(page);
     await page.goto('/l01/');
