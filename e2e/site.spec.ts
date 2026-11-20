@@ -24,6 +24,16 @@ test.describe('home and entry', () => {
     await expectNoHorizontalScroll(page);
   });
 
+  test('principles: each one expands and links to the lessons that teach it', async ({ page }) => {
+    await page.goto('/');
+    const first = page.locator('#h-principles ~ details.why').first();
+    await expect(first).not.toHaveAttribute('open', '');
+    await first.locator('summary').click();
+    await expect(first).toHaveAttribute('open', '');
+    await expect(first.getByRole('link').first()).toBeVisible();
+    await expectNoHorizontalScroll(page);
+  });
+
   test('personal number: validation, remembered device, "לא אני"', async ({ page }) => {
     await mockTracking(page);
     await page.goto('/l01/');
