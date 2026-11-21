@@ -9,30 +9,49 @@ async function toBoard(page: Page) {
   await expect(page.locator('.chat .bubble', { hasText: 'כשתהיה מוכן' })).toBeVisible({ timeout: 25_000 });
   await next(page);
 
-  await expectStep(page, 'הניסיון הראשון: בלי מחבר');
+  await expectStep(page, 'הניסיון הראשון: תמונת הזמנה מ-Gemini');
   await expect(page.getByText('אבטחת מידע').first()).toBeVisible();
-  await page.getByRole('button', { name: 'תוצר לדוגמה: בלי מחבר' }).click();
-  await expect(page.locator('.check.is-pass')).toHaveCount(0);
+  // Only the tool this screen needs is offered: Gemini, and nothing else.
+  await expect(page.locator('.snippet .btn-tool')).toHaveCount(1);
+  await expect(page.locator('.snippet .btn-tool')).toContainText('Gemini');
+  await expect(page.locator('.tool-guide .note')).toContainText('הכלי לשלב הזה: Gemini');
+  await page.getByRole('button', { name: 'ממצאים לדוגמה: נמצאו שגיאות' }).click();
+  await expect(page.locator('.check.is-pass')).toHaveCount(1);
+  await expectNoHorizontalScroll(page);
+  await next(page);
+
+  await expectStep(page, 'מה ראית, ומה עושים אחרת');
   await next(page);
 
   await expectStep(page, 'קוראים הרשאה לפני שמחברים');
   const answers: [string, string][] = [
     ['מה Claude יוכל לעשות בחשבון Canva', 'לצפות, ליצור ולערוך עיצובים, ולא למחוק או לשתף'],
-    ['Claude ערך עיצוב קיים שלך', 'נתתי את ההרשאה, ולכן אני אחראי לבדוק את התוצאה ולתקן, גם אם הטעות נוצרה בכלי'],
+    [
+      'Claude ערך עיצוב קיים שלך',
+      'נתתי את ההרשאה, ולכן אני אחראי לבדוק את התוצאה ולתקן, גם אם הטעות נוצרה בכלי',
+    ],
     ['מה נכון לעשות לפני שמאשרים הרשאה', 'לקרוא מה מתבקש, ולבדוק שזה מתאים למשימה ולחשבון'],
   ];
-  for (const [q, opt] of answers) await page.locator('fieldset', { hasText: q }).getByLabel(opt, { exact: true }).check();
+  for (const [q, opt] of answers)
+    await page.locator('fieldset', { hasText: q }).getByLabel(opt, { exact: true }).check();
   await page.getByRole('button', { name: 'בדוק תשובות' }).click();
   await expect(page.locator('.result-sum')).toContainText('3 מתוך 3');
   await next(page);
 
   await expectStep(page, 'מחברים את Canva');
-  await expect(page.getByRole('link', { name: 'העזרה הרשמית של Claude' })).toHaveAttribute('href', 'https://support.claude.com');
+  await expect(page.locator('.tool-guide .btn-tool')).toHaveCount(1);
+  await expect(page.locator('.tool-guide .btn-tool')).toContainText('פתח את Claude');
+  await expect(page.getByRole('link', { name: 'העזרה הרשמית של Claude' })).toHaveAttribute(
+    'href',
+    'https://support.claude.com',
+  );
   await expectNoHorizontalScroll(page);
   await next(page);
 
   await expectStep(page, 'מה כתוב במסך ההרשאות שלך');
-  await page.getByLabel('מה Claude מבקש לעשות בחשבון Canva שלך').fill('לצפות וליצור ולערוך עיצובים, בלי מחיקה');
+  await page
+    .getByLabel('מה Claude מבקש לעשות בחשבון Canva שלך')
+    .fill('לצפות וליצור ולערוך עיצובים, בלי מחיקה');
   await next(page);
 
   await expectStep(page, 'הזמנה ב-Canva');
@@ -61,7 +80,9 @@ async function toBoard(page: Page) {
   await expectStep(page, 'לוח הכנה ב-monday: הקובץ');
 }
 
-test('L08 end to end: no connector, permissions, invitation, board, real-time change, disconnect, score', async ({ page }) => {
+test('L08 end to end: no connector, permissions, invitation, board, real-time change, disconnect, score', async ({
+  page,
+}) => {
   const events = await mockTracking(page);
   await toBoard(page);
   await expectNoHorizontalScroll(page);
@@ -113,14 +134,16 @@ test('L08 end to end: no connector, permissions, invitation, board, real-time ch
   await expectStep(page, 'בונוס לקצין מטה');
   await page.getByRole('button', { name: 'סיום הלומדה' }).click();
   await expect(page.locator('.score-big .clock')).toHaveText('100%');
-  await expect.poll(() => events.some((e) => e.event === 'complete' && e.module === 'L08' && e.score === 100)).toBe(true);
+  await expect
+    .poll(() => events.some((e) => e.event === 'complete' && e.module === 'L08' && e.score === 100))
+    .toBe(true);
 });
 
 test('L08 a wrong board count is explained, with the right answer', async ({ page }) => {
   await mockTracking(page);
   await login(page, '/l08/');
   await page.getByRole('button', { name: 'התחל' }).click();
-  for (let i = 0; i < 10; i++) await next(page);
+  for (let i = 0; i < 11; i++) await next(page);
   await expectStep(page, 'בדיקת הלוח ב-monday');
   await page.getByLabel('תשובה לשאלה 1').fill('12');
   await page.getByLabel('תשובה לשאלה 2').fill('6');
@@ -129,6 +152,8 @@ test('L08 a wrong board count is explained, with the right answer', async ({ pag
   await page.getByLabel('תשובה לשאלה 5').fill('23%');
   await page.getByRole('button', { name: 'בדוק מול הקובץ' }).click();
   await expect(page.locator('.result-sum')).toContainText('3 מתוך 5');
-  await expect(page.locator('.quiz-result').filter({ hasText: 'משימות בסטטוס ״בוצע״ עם מועד שעבר' })).toBeVisible();
+  await expect(
+    page.locator('.quiz-result').filter({ hasText: 'משימות בסטטוס ״בוצע״ עם מועד שעבר' }),
+  ).toBeVisible();
   await expect(page.locator('.quiz-result').filter({ hasText: 'בקובץ 13 משימות' })).toBeVisible();
 });
