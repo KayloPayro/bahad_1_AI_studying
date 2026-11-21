@@ -2,7 +2,14 @@ import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { buildNumberIndex, type NumberIndex } from '@lumda/checkers';
 import { config, SITE_BASE } from '@lumda/config';
 import { STAGE_LABELS, type ChatMessage, type ModuleContent, type Step } from '@lumda/schema';
-import { createTracker, type EventName, type Identity } from '@lumda/tracking';
+import {
+  clearIdentity,
+  createTracker,
+  getIdentity,
+  maskPn,
+  type EventName,
+  type Identity,
+} from '@lumda/tracking';
 import {
   budgetLabel,
   ChatSimulator,
@@ -18,6 +25,7 @@ import {
   MessageHistory,
   Paras,
   ToolGuide,
+  ToolsContext,
   Rich,
   Sheet,
   ThemeToggle,
@@ -44,7 +52,8 @@ export function ModuleApp({
   plugins?: MountOptions['plugins'];
   tracker: Tracker;
 }) {
-  const [identity, setIdentity] = useState<Identity | null>(null);
+  // A remembered cadet goes straight in: the entry screen appears only when nobody is remembered on this device.
+  const [identity, setIdentity] = useState<Identity | null>(getIdentity);
   const [instructor, setInstructor] = useState(false);
   const [gate, setGate] = useState(false);
 
@@ -95,7 +104,10 @@ export function ModuleApp({
       identity={identity}
       instructor={instructor}
       onToggleInstructor={toggleInstructor}
-      onSwitchUser={() => setIdentity(null)}
+      onSwitchUser={() => {
+        clearIdentity();
+        setIdentity(null);
+      }}
       tracker={tracker}
     />,
   );
@@ -287,6 +299,12 @@ function Runner({
         מצב מדריך
       </button>
       <ThemeToggle />
+      <span class="muted">
+        מחובר כ-
+        <span class="clock" dir="ltr">
+          {maskPn(identity.pn)}
+        </span>
+      </span>
       <button type="button" class="btn btn-ghost btn-small" onClick={onSwitchUser}>
         החלף משתמש
       </button>
@@ -403,7 +421,13 @@ function Runner({
               </div>
             </header>
             <Paras items={step.body} className="step-body" />
-            {step.toolGuide && <ToolGuide />}
+            {step.toolGuide && (
+              <ToolGuide
+                tools={step.openTools}
+                why={step.toolWhy}
+                links={!(step.type === 'prompt' || (step as { snippets?: unknown[] }).snippets?.length)}
+              />
+            )}
             {step.messages && step.messages.length > 0 && (
               <ChatSimulator
                 key={step.id + '-chat'}
@@ -413,24 +437,26 @@ function Runner({
                 onClock={(v) => setRun((r) => ({ ...r, chatClock: { ...r.chatClock, [step.id]: v } }))}
               />
             )}
-            {Renderer ? (
-              <Renderer
-                step={step}
-                content={content}
-                data={run.data[step.id] ?? {}}
-                setData={(patch) =>
-                  setRun((r) => ({
-                    ...r,
-                    data: { ...r.data, [step.id]: { ...(r.data[step.id] ?? {}), ...patch } },
-                  }))
-                }
-                metrics={run.metrics}
-                setMetric={(k, v) => setRun((r) => ({ ...r, metrics: { ...r.metrics, [k]: v } }))}
-                ctx={ctx}
-              />
-            ) : (
-              step.type === 'custom' && <p class="flag flag-bad">רכיב "{step.name}" לא נרשם בלומדה.</p>
-            )}
+            <ToolsContext.Provider value={step.openTools}>
+              {Renderer ? (
+                <Renderer
+                  step={step}
+                  content={content}
+                  data={run.data[step.id] ?? {}}
+                  setData={(patch) =>
+                    setRun((r) => ({
+                      ...r,
+                      data: { ...r.data, [step.id]: { ...(r.data[step.id] ?? {}), ...patch } },
+                    }))
+                  }
+                  metrics={run.metrics}
+                  setMetric={(k, v) => setRun((r) => ({ ...r, metrics: { ...r.metrics, [k]: v } }))}
+                  ctx={ctx}
+                />
+              ) : (
+                step.type === 'custom' && <p class="flag flag-bad">רכיב "{step.name}" לא נרשם בלומדה.</p>
+              )}
+            </ToolsContext.Provider>
             <Why text={step.why} />
             <InstructorNote text={step.instructor} />
           </article>

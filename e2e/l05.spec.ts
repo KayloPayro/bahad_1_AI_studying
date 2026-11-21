@@ -35,6 +35,13 @@ test('L05 end to end: no sources, notebook, six sourced answers, learning page, 
   await expect(page.locator('.check.is-pass')).toHaveCount(0);
   await next(page);
 
+  await expectStep(page, 'מה זה NotebookLM ולמה משתמשים בו');
+  for (const topic of ['מה זה NotebookLM', 'במה הוא שונה מכלי שיחה', 'היתרונות שלו', 'איך מתחילים', 'איך לומדים איתו', 'מה לא לצפות ממנו', 'מתי לבחור בו', 'מה מעלים']) {
+    await page.locator('.flip', { hasText: topic }).first().click();
+  }
+  await expectNoHorizontalScroll(page);
+  await next(page);
+
   await expectStep(page, 'מחברת עם ארבעת המסמכים');
   await expect(page.locator('a[download]')).toHaveCount(4);
   await expect(page.locator('details.race-doc')).toHaveCount(4);
@@ -52,6 +59,15 @@ test('L05 end to end: no sources, notebook, six sourced answers, learning page, 
   await page.getByRole('button', { name: 'בדוק את המקורות' }).click();
   await expect(page.locator('.result-sum')).toContainText('6 מתוך 6');
   await expect(page.locator('.quiz-result .status-bad')).toHaveCount(0);
+  await expectNoHorizontalScroll(page);
+  await next(page);
+
+  await expectStep(page, 'ללמוד מהחומר: שאלות תרגול ובדיקתן');
+  await expect(page.locator('.tool-guide')).toBeVisible();
+  await page.getByRole('button', { name: 'תוצר לדוגמה: החומר מסתיר סתירה' }).click();
+  await expect(page.locator('.check.is-pass')).toHaveCount(1);
+  await page.getByRole('button', { name: 'תוצר לדוגמה: החומר שומר על הסתירה' }).click();
+  await expect(page.locator('.check.is-pass')).toHaveCount(2);
   await expectNoHorizontalScroll(page);
   await next(page);
 
@@ -78,6 +94,7 @@ test('L05 a wrong source is explained and the answers lock', async ({ page }) =>
   await mockTracking(page);
   await login(page, '/l05/');
   await page.getByRole('button', { name: 'התחל' }).click();
+  await next(page);
   await next(page);
   await next(page);
   await next(page);

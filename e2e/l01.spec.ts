@@ -110,7 +110,8 @@ test('progress is kept on reload ("continue where you stopped")', async ({ page 
   await next(page);
   await expectStep(page, 'מסמך הרקע');
   await page.reload();
-  await page.getByRole('button', { name: 'המשך', exact: true }).click(); // entry: continue as XXXX493
+  // A remembered cadet is not asked again: the lesson reopens on the step where they stopped.
+  await expect(page.getByLabel('מספר אישי')).toHaveCount(0);
   await expectStep(page, 'מסמך הרקע');
   await expect(page.locator('.clock-box')).toBeVisible();
 });

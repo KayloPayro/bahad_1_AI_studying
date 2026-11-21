@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
-import { expectNoHorizontalScroll, expectWatermark, login, mockTracking } from './helpers';
+import { expectNoHorizontalScroll, expectStep, expectWatermark, login, mockTracking, next } from './helpers';
 
 /** Counts come from the content files, so finishing a lesson does not break this test. */
 const statuses = readdirSync('modules').map(
@@ -62,10 +62,40 @@ test.describe('home and entry', () => {
     await page.getByRole('button', { name: 'כניסה' }).click();
     await expect(page.getByRole('heading', { level: 1, name: 'דף החלטה למ״פ' })).toBeVisible();
 
+    // Remembered: no entry screen after a reload, and the footer says who is logged in.
     await page.reload();
-    await expect(page.getByText('XXXX493')).toBeVisible();
-    await page.getByRole('button', { name: 'לא אני' }).click();
+    await expect(page.getByLabel('מספר אישי')).toHaveCount(0);
+    await expect(page.locator('.page-foot').getByText('XXXX493')).toBeVisible();
+    await page.getByRole('button', { name: 'החלף משתמש' }).click();
     await expect(page.getByLabel('מספר אישי')).toHaveValue('');
+    // Switching really forgets: a reload shows the entry form, not the previous cadet.
+    await page.reload();
+    await expect(page.getByLabel('מספר אישי')).toHaveValue('');
+  });
+
+  test('login once: another lesson opens without asking, and logging in again brings the progress back', async ({ page }) => {
+    await mockTracking(page);
+    await login(page, '/l00/');
+    await page.getByRole('button', { name: 'התחל' }).click();
+    await expectStep(page, 'פותחים כלי ושולחים הודעה ראשונה');
+    await next(page);
+    await expectStep(page, 'שואלים על דבר שלא סיפרו לכלי');
+
+    // Another lesson on the same device: straight in, no personal number asked.
+    await page.goto('/l01/');
+    await expect(page.getByLabel('מספר אישי')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'התחל' })).toBeVisible();
+
+    // Back to the first lesson: progress is where it was.
+    await page.goto('/l00/');
+    await expectStep(page, 'שואלים על דבר שלא סיפרו לכלי');
+
+    // Switch user and log in again with the same number: the progress comes back.
+    await page.getByRole('button', { name: 'החלף משתמש' }).click();
+    await page.getByLabel('מספר אישי').fill('9324493');
+    await page.getByLabel('צוות', { exact: true }).selectOption('18');
+    await page.getByRole('button', { name: 'כניסה' }).click();
+    await expectStep(page, 'שואלים על דבר שלא סיפרו לכלי');
   });
 
   test('draft module shows its planned structure without tracking', async ({ page }) => {

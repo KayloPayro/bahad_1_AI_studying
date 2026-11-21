@@ -207,6 +207,8 @@
         "snippets": { "type": "array", "items": { "$ref": "#/definitions/sample" } },
         "askFirst": { "type": "boolean" },
         "toolGuide": { "type": "boolean" },
+        "openTools": { "type": "array", "items": { "enum": ["claude", "chatgpt", "gemini", "notebooklm"] }, "minItems": 1 },
+        "toolWhy": { "type": "string" },
         "copyable": { "type": "boolean" },
         "attachLabel": { "type": "string" },
         "sameChat": { "type": "boolean" },

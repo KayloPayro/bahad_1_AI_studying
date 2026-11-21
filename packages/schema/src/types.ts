@@ -99,6 +99,13 @@ interface StepBase {
   why?: string;
   /** Shows the shared "working with the AI tool" card (security note + the six hand-off steps). */
   toolGuide?: boolean;
+  /**
+   * Which tools this screen offers "copy and open" buttons for (ids from TOOLS in @lumda/ui: claude, chatgpt,
+   * gemini, notebooklm). Leave out to offer the three chat tools. Give only the tool the screen really needs.
+   */
+  openTools?: string[];
+  /** One short sentence: why these tools fit this screen. Shown in the tool card. */
+  toolWhy?: string;
   /** Instructor-only note. */
   instructor?: string;
   /** Messages that arrive in the chat while this step is open. */

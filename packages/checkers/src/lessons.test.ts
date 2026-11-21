@@ -82,6 +82,23 @@ describe('L05 unfamiliar topic', () => {
     expect(autoIds(m, sample(m))).toEqual(autoAll(m));
     expect(autoIds(m, 'אני לא זוכר')).toEqual([]);
   });
+  it('the study-material step is not scored, hides nothing in its second sample, and flags the first', () => {
+    const st = step<OutputStep>(c5, 'study');
+    expect(st.metric).toBeUndefined();
+    expect(autoIds(st, sample(st, 0))).toEqual(['s-src']);
+    expect(autoIds(st, sample(st, 1))).toEqual(autoAll(st));
+    expect(autoIds(st, 'אין לי חומר')).toEqual([]);
+  });
+  it('the NotebookLM explanation comes before the notebook is built, and is a flip-card step', () => {
+    const ids = c5.steps.map((s) => s.id);
+    expect(ids.indexOf('nlm')).toBeLessThan(ids.indexOf('sources'));
+    expect(ids.indexOf('study')).toBeGreaterThan(ids.indexOf('ask'));
+    expect(ids.indexOf('study')).toBeLessThan(ids.indexOf('page'));
+    const n = step<{ type: string; mode: string; cards: unknown[] }>(c5, 'nlm');
+    expect(n.type).toBe('cards');
+    expect(n.mode).toBe('flip');
+    expect(n.cards).toHaveLength(8);
+  });
   it('the no-sources attempt: the made-up number is detected, the honest answer is not', () => {
     const b = step<OutputStep>(c5, 'blind');
     expect(autoIds(b, sample(b, 0))).toEqual(['b-number']);
@@ -315,6 +332,26 @@ describe('L08 connected tools', () => {
       return { task, owner, offset: m ? Number(m[1]) : null, status };
     });
   const pr = (id: string) => step<PromptStep>(c8, id);
+
+  it('the first attempt is a Gemini-only image request with an unscored output, and both samples are recognised', () => {
+    const b = step<OutputStep & { openTools?: string[]; toolWhy?: string; snippets: { text: string }[] }>(c8, 'blind');
+    expect(b.openTools).toEqual(['gemini']);
+    expect(b.toolWhy).toBeTruthy();
+    expect(b.metric).toBeUndefined();
+    expect(autoIds(b, sample(b, 0))).toEqual(['b-found']);
+    expect(autoIds(b, sample(b, 1))).toEqual(['b-found']);
+    expect(autoIds(b, 'אין לי מה לכתוב')).toEqual([]);
+    // The request carries every fact the cadet checks the image against.
+    const req = b.snippets[0]!.text;
+    for (const f of ['18:15', 'ציוד לוחם', 'חובש רון אביב', '050-0000003']) expect(req).toContain(f);
+  });
+  it('the Claude-connector steps offer Claude only, and the image explanation follows the first attempt', () => {
+    for (const id of ['connect', 'invite', 'board-files', 'board', 'change']) {
+      expect((step<{ openTools?: string[] }>(c8, id)).openTools, id).toEqual(['claude']);
+    }
+    const ids = c8.steps.map((s) => s.id);
+    expect(ids.indexOf('image-limits')).toBe(ids.indexOf('blind') + 1);
+  });
   const meets = (s: PromptStep, text: string) => s.requirements!.every((r) => runAutoTest(r.test!, text).pass);
 
   it('the file has thirteen tasks, one of them without a date, and the answers of the board check follow from it', () => {

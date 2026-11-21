@@ -15,6 +15,12 @@ export function getIdentity(): Identity | null {
 
 export function setIdentity(id: Identity): void {
   setJSON(KEY, id);
+  // Best effort: ask the browser to keep this device's storage (identity and progress) when space is short.
+  try {
+    void navigator.storage?.persist?.();
+  } catch {
+    /* not supported */
+  }
 }
 
 export function clearIdentity(): void {

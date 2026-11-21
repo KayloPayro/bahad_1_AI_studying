@@ -2,6 +2,7 @@ import { createContext, type ComponentChildren } from 'preact';
 import { useContext } from 'preact/hooks';
 import { config } from '@lumda/config';
 import { Rich } from './rich';
+import { toolsFor } from './tools';
 import emblemUrl from './emblem.svg';
 
 /** The Bahad 1 symbol. It carries its own black ring, so it sits on any surface in both themes. */
@@ -38,17 +39,42 @@ export function Why({ text }: { text?: string }) {
  * Shared card for every screen that sends the cadet out to an external AI tool: the security rule up front,
  * then the same six hand-off steps each time, so no lesson has to explain them again.
  */
-export function ToolGuide() {
+export function ToolGuide({ tools, why, links }: { tools?: string[]; why?: string; links?: boolean }) {
+  const offered = toolsFor(tools);
+  const names = offered.map((t) => t.name);
+  const named = Boolean(tools?.length);
   return (
     <section class="tool-guide" aria-label="עבודה עם כלי AI">
       <p class="flag flag-warn" role="note">
         <strong>אבטחת מידע:</strong> התרגיל מבוסס על חומר מדומה בלבד. אל תעתיק לכלי AI חיצוני מידע צבאי אמיתי,
         מידע אישי או פרטי יחידה, אלא אם השימוש אושר לך במפורש.
       </p>
+      {(named || why) && (
+        <p class="note">
+          {named && <strong>{names.length === 1 ? 'הכלי לשלב הזה: ' : 'הכלים לשלב הזה: '}</strong>}
+          {named && `${names.join(', ')}.`}
+          {why ? ` ${why}` : ''}
+        </p>
+      )}
+      {named && links && (
+        <div class="tools" role="group" aria-label="פתיחת הכלי">
+          {offered.map((t) => (
+            <a key={t.id} class="btn btn-tool" href={t.url} target="_blank" rel="noopener noreferrer">
+              פתח את {t.name}
+            </a>
+          ))}
+        </div>
+      )}
       <details class="tool-guide-steps">
         <summary>איך עובדים עם כלי ה-AI (6 צעדים)</summary>
         <ol>
-          <li>בחר כלי אחד: ChatGPT, Claude או Gemini. מספיק אחד.</li>
+          <li>
+            {!named
+              ? 'בחר כלי אחד: ChatGPT, Claude או Gemini. מספיק אחד.'
+              : names.length === 1
+                ? `פתח את ${names[0]}. זה הכלי שהשלב הזה צריך.`
+                : `בחר אחד מהכלים שמופיעים בשלב: ${names.join(', ')}.`}
+          </li>
           <li>פתח שיחה חדשה כשמתבקשים לעשות זאת.</li>
           <li>העתק מהאתר את ההנחיה והדבק אותה בשיחה.</li>
           <li>אם מתבקשים לצרף מסמך, העתק גם אותו והדבק.</li>

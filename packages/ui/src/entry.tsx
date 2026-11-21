@@ -1,14 +1,12 @@
 import { useId, useState } from 'preact/hooks';
 import { config } from '@lumda/config';
-import { clearIdentity, getIdentity, maskPn, setIdentity, validatePn, type Identity } from '@lumda/tracking';
+import { setIdentity, validatePn, type Identity } from '@lumda/tracking';
 
 /**
- * Entry: personal number + team. Not authentication — a progress tag. On a returning device it offers
- * "ממשיך כ-XXXX493" with "לא אני", so a shared classroom device works without retyping.
+ * Entry: personal number + team. Not authentication — a progress tag. Shown only when nobody is remembered on
+ * this device (the first time, or after "החלף משתמש"). A remembered cadet never sees it again.
  */
 export function EntryScreen({ onReady, context }: { onReady: (id: Identity) => void; context?: string }) {
-  const existing = getIdentity();
-  const [mode, setMode] = useState<'continue' | 'form'>(existing ? 'continue' : 'form');
   const [pn, setPn] = useState('');
   const [team, setTeam] = useState('');
   const [touched, setTouched] = useState({ pn: false, team: false });
@@ -17,40 +15,12 @@ export function EntryScreen({ onReady, context }: { onReady: (id: Identity) => v
   const pnErr = validatePn(pn, config.PN_LENGTH);
   const teamErr = team ? null : 'בחר צוות מהרשימה';
 
-  if (mode === 'continue' && existing) {
-    return (
-      <section class="entry card" aria-labelledby="entry-h">
-        <h1 id="entry-h" class="entry-title">
-          {context ?? config.SITE_TITLE}
-        </h1>
-        <p class="entry-continue">
-          ממשיך כ-<span class="clock" dir="ltr">{maskPn(existing.pn)}</span>, צוות <span class="num">{existing.team}</span>
-        </p>
-        <div class="row">
-          <button type="button" class="btn btn-primary" onClick={() => onReady(existing)}>
-            המשך
-          </button>
-          <button
-            type="button"
-            class="btn btn-secondary"
-            onClick={() => {
-              clearIdentity();
-              setMode('form');
-            }}
-          >
-            לא אני
-          </button>
-        </div>
-      </section>
-    );
-  }
-
   return (
     <section class="entry card" aria-labelledby="entry-h">
       <h1 id="entry-h" class="entry-title">
         {context ?? config.SITE_TITLE}
       </h1>
-      <p class="muted">לפני שמתחילים: מספר אישי וצוות. זה רק לתיוג ההתקדמות, אין סיסמה.</p>
+      <p class="muted">מספר אישי וצוות, פעם אחת במכשיר הזה. זה רק לתיוג ההתקדמות, אין סיסמה. ההתקדמות נשמרת במכשיר הזה, וכניסה שוב עם אותו מספר אישי מחזירה אותה.</p>
       <form
         class="form"
         noValidate
