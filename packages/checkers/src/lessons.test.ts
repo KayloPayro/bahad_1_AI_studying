@@ -82,6 +82,23 @@ describe('L05 unfamiliar topic', () => {
     expect(autoIds(m, sample(m))).toEqual(autoAll(m));
     expect(autoIds(m, 'אני לא זוכר')).toEqual([]);
   });
+  it('the study-material step is not scored, hides nothing in its second sample, and flags the first', () => {
+    const st = step<OutputStep>(c5, 'study');
+    expect(st.metric).toBeUndefined();
+    expect(autoIds(st, sample(st, 0))).toEqual(['s-src']);
+    expect(autoIds(st, sample(st, 1))).toEqual(autoAll(st));
+    expect(autoIds(st, 'אין לי חומר')).toEqual([]);
+  });
+  it('the NotebookLM explanation comes before the notebook is built, and is a flip-card step', () => {
+    const ids = c5.steps.map((s) => s.id);
+    expect(ids.indexOf('nlm')).toBeLessThan(ids.indexOf('sources'));
+    expect(ids.indexOf('study')).toBeGreaterThan(ids.indexOf('ask'));
+    expect(ids.indexOf('study')).toBeLessThan(ids.indexOf('page'));
+    const n = step<{ type: string; mode: string; cards: unknown[] }>(c5, 'nlm');
+    expect(n.type).toBe('cards');
+    expect(n.mode).toBe('flip');
+    expect(n.cards).toHaveLength(8);
+  });
   it('the no-sources attempt: the made-up number is detected, the honest answer is not', () => {
     const b = step<OutputStep>(c5, 'blind');
     expect(autoIds(b, sample(b, 0))).toEqual(['b-number']);

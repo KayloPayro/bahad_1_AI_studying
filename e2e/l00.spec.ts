@@ -20,7 +20,7 @@ async function toQuiz(page: import('@playwright/test').Page) {
   await next(page);
 
   await expectStep(page, 'מי הכלים ובמה הם שונים');
-  for (const topic of ['מה זה כלי AI', 'ChatGPT, Claude, Gemini', 'NotebookLM', 'כלי מחובר לאפליקציות', 'מה הכלי עלול לעשות', 'מה בהמשך']) {
+  for (const topic of ['מה זה כלי AI', 'ChatGPT: במה הוא מיוחד', 'Claude: במה הוא מיוחד', 'Gemini: במה הוא מיוחד', 'NotebookLM: במה הוא מיוחד', 'איזה כלי מתי', 'כלי מחובר לאפליקציות', 'מה הכלי עלול לעשות', 'מה בהמשך']) {
     await page.locator('.flip', { hasText: topic }).first().click();
   }
   await next(page);

@@ -48,21 +48,6 @@ body {
   padding: var(--sp-5);
 }
 
-/* Ring dot: the emblem's concentric rings, used before kickers and section titles */
-.ring-dot,
-.intro-kicker::before,
-.step-kicker::before,
-.site-kicker::before,
-.section-h::before {
-  content: '';
-  flex: none;
-  display: inline-block;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: radial-gradient(circle, var(--red) 0 3px, var(--bg) 3.5px 4px, var(--ink) 4.5px);
-}
-
 /* Ribbon: red + gold stripe under every top bar. One thread through all modules. */
 .topbar::after,
 .site-head::after {
