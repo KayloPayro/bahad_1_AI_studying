@@ -183,11 +183,12 @@ describe('L07 tasks to calendar', () => {
     const pass = c6.score!.levels!.find((l) => l.label === 'עומד במדד')!.min;
     expect(100 - w.verifyOk!).toBeLessThan(pass);
   });
-  it('the dedicated-account warning and the disconnect step are there, and the intro does not call the separate calendar a protection', () => {
+  it('the dedicated-account warning and the cleanup step are there, and the intro does not call the separate calendar a protection', () => {
     const t = JSON.stringify(c6.steps[0]);
     expect(t).toContain('חשבון Google ייעודי');
     expect(t).not.toContain('היומן האישי שלך לא נפגע');
-    expect(c6.steps.map((x) => x.id)).toContain('disconnect');
+    expect(c6.steps.map((x) => x.id)).toContain('cleanup');
+    expect(c6.steps.map((x) => x.id)).not.toContain('disconnect');
   });
   it('the chat gives the durations and the authority to move the briefing', () => {
     const inbox = c6.steps.find((x) => x.id === 'inbox') as unknown as { messages: { text: string }[] };

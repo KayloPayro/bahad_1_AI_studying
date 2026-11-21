@@ -78,7 +78,7 @@ test('L07 end to end: calendar file, health check, approval prompt, follow-up, v
   await expect(page.locator('.result-sum')).toContainText('4 מתוך 4');
   await next(page);
 
-  await expectStep(page, 'מנתקים ומוחקים');
+  await expectStep(page, 'מוחקים מהיומן מה שנוצר');
   for (const box of await page.locator('.check.is-manual input').all()) await box.check();
   await next(page);
 

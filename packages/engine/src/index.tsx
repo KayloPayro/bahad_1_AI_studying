@@ -22,6 +22,15 @@ export function getTracker() {
 /** Registers the site-wide service worker (generated at build time by scripts/build-all.ts). */
 export function registerServiceWorker() {
   if (!import.meta.env.PROD || !('serviceWorker' in navigator)) return;
+  // A new version takes over (skipWaiting) while the old page is still open: reload once so the cadet sees the
+  // update without closing the tab. Progress is saved on every change, so nothing is lost.
+  const hadController = Boolean(navigator.serviceWorker.controller);
+  let reloaded = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!hadController || reloaded) return;
+    reloaded = true;
+    location.reload();
+  });
   window.addEventListener('load', () => {
     navigator.serviceWorker.register(SITE_BASE + 'sw.js', { scope: SITE_BASE }).catch(() => {
       /* offline support is best-effort */

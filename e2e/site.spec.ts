@@ -19,6 +19,7 @@ test.describe('home and entry', () => {
     await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
     await expect(page.getByRole('heading', { level: 1, name: 'לומדות AI לצוערים' })).toBeVisible();
     await expect(page.locator('#h-ready + .mod-list > li')).toHaveCount(READY);
+    await expect(page.locator('#h-drafts')).toHaveCount(DRAFTS > 0 ? 1 : 0);
     await expect(page.locator('#h-drafts ~ .mod-list > li')).toHaveCount(DRAFTS);
     await expectWatermark(page);
     await expectNoHorizontalScroll(page);

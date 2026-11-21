@@ -127,27 +127,29 @@ function Home() {
           ))}
         </section>
 
-        <section aria-labelledby="h-drafts">
-          <h2 id="h-drafts" class="section-h">
-            בבנייה
-          </h2>
-          <p class="muted">המבנה של כל לומדה לפי האפיון. התרגול יתווסף בשלבים הבאים.</p>
-          <ul class="mod-list mod-list-compact">
-            {drafts.map((m) => (
-              <li key={m.id}>
-                <a class="mod mod-draft" href={`${SITE_BASE}${m.slug}/`}>
-                  <span class="mod-n clock">{m.id.slice(1)}</span>
-                  <span class="mod-body">
-                    <span class="mod-title">{m.title}</span>
-                    <span class="mod-sub">
-                      <span class="num">{m.minutes}</span> דק׳ · {m.tools.join(', ')}
+        {drafts.length > 0 && (
+          <section aria-labelledby="h-drafts">
+            <h2 id="h-drafts" class="section-h">
+              בבנייה
+            </h2>
+            <p class="muted">המבנה של כל לומדה לפי האפיון. התרגול יתווסף בשלבים הבאים.</p>
+            <ul class="mod-list mod-list-compact">
+              {drafts.map((m) => (
+                <li key={m.id}>
+                  <a class="mod mod-draft" href={`${SITE_BASE}${m.slug}/`}>
+                    <span class="mod-n clock">{m.id.slice(1)}</span>
+                    <span class="mod-body">
+                      <span class="mod-title">{m.title}</span>
+                      <span class="mod-sub">
+                        <span class="num">{m.minutes}</span> דק׳ · {m.tools.join(', ')}
+                      </span>
                     </span>
-                  </span>
-                </a>
-              </li>
-            ))}
-          </ul>
-        </section>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
         {identity && library.length > 0 && (
           <section aria-labelledby="h-lib">
