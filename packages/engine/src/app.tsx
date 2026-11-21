@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { buildNumberIndex, type NumberIndex } from '@lumda/checkers';
 import { config, SITE_BASE } from '@lumda/config';
 import { STAGE_LABELS, type ChatMessage, type ModuleContent, type Step } from '@lumda/schema';
-import { createTracker, type EventName, type Identity } from '@lumda/tracking';
+import { clearIdentity, createTracker, getIdentity, maskPn, type EventName, type Identity } from '@lumda/tracking';
 import {
   budgetLabel,
   ChatSimulator,
@@ -44,7 +44,8 @@ export function ModuleApp({
   plugins?: MountOptions['plugins'];
   tracker: Tracker;
 }) {
-  const [identity, setIdentity] = useState<Identity | null>(null);
+  // A remembered cadet goes straight in: the entry screen appears only when nobody is remembered on this device.
+  const [identity, setIdentity] = useState<Identity | null>(getIdentity);
   const [instructor, setInstructor] = useState(false);
   const [gate, setGate] = useState(false);
 
@@ -95,7 +96,10 @@ export function ModuleApp({
       identity={identity}
       instructor={instructor}
       onToggleInstructor={toggleInstructor}
-      onSwitchUser={() => setIdentity(null)}
+      onSwitchUser={() => {
+        clearIdentity();
+        setIdentity(null);
+      }}
       tracker={tracker}
     />,
   );
@@ -287,6 +291,9 @@ function Runner({
         מצב מדריך
       </button>
       <ThemeToggle />
+      <span class="muted">
+        מחובר כ-<span class="clock" dir="ltr">{maskPn(identity.pn)}</span>
+      </span>
       <button type="button" class="btn btn-ghost btn-small" onClick={onSwitchUser}>
         החלף משתמש
       </button>
