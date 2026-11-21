@@ -80,7 +80,7 @@ async function toBoard(page: Page) {
   await expectStep(page, 'לוח הכנה ב-monday: הקובץ');
 }
 
-test('L08 end to end: no connector, permissions, invitation, board, real-time change, disconnect, score', async ({
+test('L08 end to end: no connector, permissions, invitation, board, real-time change, score', async ({
   page,
 }) => {
   const events = await mockTracking(page);
@@ -125,10 +125,6 @@ test('L08 end to end: no connector, permissions, invitation, board, real-time ch
   await page.getByLabel('תשובה לשאלה 2').fill('1');
   await page.getByRole('button', { name: 'בדוק', exact: true }).click();
   await expect(page.locator('.result-sum')).toContainText('2 מתוך 2');
-  await next(page);
-
-  await expectStep(page, 'מנתקים הרשאות');
-  for (const box of await page.locator('.check.is-manual input').all()) await box.check();
   await next(page);
 
   await expectStep(page, 'בונוס לקצין מטה');
